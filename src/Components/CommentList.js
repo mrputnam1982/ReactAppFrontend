@@ -4,7 +4,6 @@ import '../Styles/CommentBox.scss';
 import Avatar from 'react-avatar';
 import cn from 'classnames';
 import moment from 'moment';
-import ReactTimeout from 'react-timeout';
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faArrowAltCircleUp, faArrowAltCircleDown} from "@fortawesome/free-solid-svg-icons"
 
@@ -158,4 +157,4 @@ class CommentList extends Component {
     }
 }
 
-export default ReactTimeout(CommentList);
+export default CommentList;

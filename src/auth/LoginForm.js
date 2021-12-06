@@ -4,14 +4,12 @@ import PropTypes from 'prop-types'
 import {Card,Form,Button,Col, Alert} from "react-bootstrap"
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faSave,faPlusSquare,faUndo} from "@fortawesome/free-solid-svg-icons"
-import { toast } from 'react-toastify'
 import {Link} from "react-router-dom"
 import {authenticationService as auth} from '../services/authenticationService'
 import {getImageService as getImgSvc} from '../services/getImageService'
 import history from '../Components/history';
 import Cookies from 'universal-cookie';
 import {getNameService as getNameSvc} from '../services/getNameService'
-
 export default class LoginForm extends Component {
 
     //...

@@ -1,5 +1,5 @@
 import React, { Component, useState } from 'react';
-import { Link, withRouter } from 'react-router-dom';
+import { Link} from 'react-router-dom';
 import { Button, Container, Form, FormGroup, Input, Label } from 'reactstrap';
 import { EditorState, ContentState, convertFromRaw, convertToRaw} from 'draft-js'
 import RichTextEditor from '../Components/RichTextEditor'
@@ -153,4 +153,4 @@ class PostEdit extends Component {
         </div>
     }
 }
-export default withRouter(PostEdit);
+export default PostEdit;

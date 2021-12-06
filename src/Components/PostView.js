@@ -1,5 +1,5 @@
 import React, { Component, useState } from 'react';
-import { Link, withRouter } from 'react-router-dom';
+import { Link} from 'react-router-dom';
 import axios from 'axios';
 import { Button, Container, Card, CardHeader, CardTitle, CardBody, CardText, CardFooter, Label } from 'reactstrap';
 import AppNavbar from './AppNavbar';
@@ -576,4 +576,4 @@ class PostView extends Component {
         </div>
     }
 }
-export default withRouter(PostView);
+export default PostView;

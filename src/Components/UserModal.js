@@ -6,7 +6,6 @@ import {authenticationService as auth} from '../services/authenticationService'
 import { Link } from 'react-router-dom';
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {FaSignInAlt, FaPlusSquare } from "react-icons/fa";
-import {ToastContainer} from 'react-toastify';
 import '../Styles/UserModal.scss';
 
 export default class UserModal extends Component{
