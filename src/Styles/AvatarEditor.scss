@@ -1,0 +1,22 @@
+.gradientContainer{
+    background: rgb(2,0,36);
+    background: linear-gradient(180deg, rgba(2,0,36,1) 0%, rgba(160,186,163,1) 80%, rgba(82,158,143,1) 100%);
+}
+
+.borderModal{
+    border: 5px;
+    border-radius: 3px;
+    border-color: 'black';
+
+}
+.close{
+    color: 'white';
+    opacity: 1;
+}
+
+.gradientHeading{
+
+background: rgb(2,0,36);
+background: linear-gradient(180deg, rgba(2,0,36,1) 0%, rgba(160,186,163,1) 93%, rgba(78,88,86,1) 100%);
+
+}

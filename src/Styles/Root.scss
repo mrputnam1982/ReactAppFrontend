@@ -1,0 +1,12 @@
+
+
+
+@import "https://fonts.googleapis.com/css2?family=Festive&family=Raleway:wght@200&display=swap" ;
+
+.CustomNavbarFont {
+    font-family: 'Festive', cursive;
+    font-size: 100px;
+}
+@import "~bootstrap/scss/bootstrap";
+/* import bootstrap to set changes */
+@import "../node_modules/bootstrap/scss/bootstrap";
