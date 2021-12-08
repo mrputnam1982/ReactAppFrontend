@@ -2,7 +2,7 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
-  "proxy": "http://localhost:8080",
+  "proxy": "https://react-blog-mrputnam-server.herokuapp.com",
   "dependencies": {
     "@emotion/css": "^11.1.3",
     "@fortawesome/fontawesome-svg-core": "^1.2.36",
