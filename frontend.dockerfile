@@ -40,5 +40,5 @@ ENV PROXY_API=$PROXY_API
 # Set the browser base url
 ENV PROXY_LOGIN=$PROXY_LOGIN
 
-# Start the app
-CMD [ "npm", "start" ]
+# Start the app (development mode)
+# CMD [ "npm", "start" ]
