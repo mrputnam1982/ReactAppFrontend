@@ -41,4 +41,4 @@ ENV PROXY_API=$PROXY_API
 ENV PROXY_LOGIN=$PROXY_LOGIN
 
 # Start the app (development mode)
-# CMD [ "npm", "start" ]
+# CMD [ "node", "index.js" ]
