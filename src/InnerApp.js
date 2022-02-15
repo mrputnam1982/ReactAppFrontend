@@ -25,7 +25,7 @@ export default class InnerApp extends React.PureComponent{
                   <div>
                   <AppNavbar/>
                   <Routes>
-                    <CustomRoute path='/' exact={true} comp={Home}/>
+                    <Route path='/' exact={true} comp={Home}/>
                     <PrivateRoute exact={true} path='/posts' comp={Posts}/>
                     <PrivateRoute exact={true} path='/posts/edit/' comp={PostEdit}/>
                     <PrivateRoute exact={true} path='/posts/view/' comp={PostView}/>
