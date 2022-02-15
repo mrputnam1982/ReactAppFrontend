@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import { Router, Route, Routes} from 'react-router-dom';
+import { Router, Route, Switch} from 'react-router-dom';
 import { MemoryRouter } from 'react-router';
 import Home from './Pages/Home';
 import Posts from './Pages/Posts'
@@ -24,14 +24,14 @@ export default class InnerApp extends React.PureComponent{
                 <Router history={history}>
                   <div>
                   <AppNavbar/>
-                  <Routes>
+                  <Switch>
                     <CustomRoute path='/' exact={true} comp={Home}/>
                     <PrivateRoute exact={true} path='/posts' comp={Posts}/>
                     <PrivateRoute exact={true} path='/posts/edit/' comp={PostEdit}/>
                     <PrivateRoute exact={true} path='/posts/view/' comp={PostView}/>
                     <PrivateRoute exact={true} path='/registration' comp={RegistrationSuccess}/>
                     <PrivateRoute exact={true} path='/profile' comp={Profile}/>
-                  </Routes>
+                  </Switch>
                   </div>
                 </Router>
 
