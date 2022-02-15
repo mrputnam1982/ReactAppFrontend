@@ -1,0 +1,3 @@
+/api    https://mrputnam-blog-server.herokuapp.com/
+/auth/register  https://mrputnam-blog-server.herokuapp.com/
+/auth/login     https://mrputnam-blog-server.herokuapp.com/
