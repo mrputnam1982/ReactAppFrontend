@@ -5,18 +5,19 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
+    ],
+    "redirects": [
+      {
+        "source": "/api/**",
+        "destination": "https://mrputnam-blog-server.herokuapp.com",
+        "type": 301
+      },
+      {
+        "source": "/auth/**",
+        "destination": "https://mrputnam-blog-server.herokuapp.com",
+        "type": 301
+      }
     ]
-  },
-  "redirects": [
-    {
-      "source": "/api/*",
-      "destination": "https://mrputnam-blog-server.herokuapp.com",
-      "type": 301
-    },
-    {
-      "source": "/auth/*",
-      "destination": "https://mrputnam-blog-server.herokuapp.com",
-      "type": 301
-    }
-  ]
+  }
+
 }

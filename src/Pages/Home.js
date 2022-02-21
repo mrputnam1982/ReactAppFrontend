@@ -9,6 +9,7 @@ import {guest} from '../Roles/Guest';
 import axios from 'axios';
 import Cookies from 'universal-cookie';
 import background from './../images/alpinelake_bg.jpg';
+
 const Home = () => {
 
 
@@ -17,10 +18,10 @@ const Home = () => {
             <div className={"p5 mb-4 rounded-3"}
                 style={{ backgroundImage: `url(${background})`,
                 backgroundSize: 'cover' }}>
-            <Container style={{position: "relative",
-                maxWidth: "100vw",
+                <Container style={{maxWidth: "100vw",
                 maxHeight: "40vw",
-                height: "40vw"}}>
+                height: "40vw"
+                }}>
 
                     <Row className="text-center justify-content-center d-flex">
                         <h1 className={"display-5"}>Landing Page</h1>
@@ -28,7 +29,7 @@ const Home = () => {
                     </Row>
 
 
-                    <Row className="items-align">
+                    <Row className="text-center justify-content-center d-flex">
                       <Landing/>
                     </Row>
 
