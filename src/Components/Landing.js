@@ -8,11 +8,13 @@ export default class Landing extends Component{
 
     constructor(props) {
         super(props);
-        this.state = {show: false, displayLogin: false, height: 0, width: 0};
+        this.state = {show: false, displayLogin: false, height: 0, width: 0, redirectLogicActive: true};
         this.openLoginDlg = this.openLoginDlg.bind(this);
         this.openRegisterDlg = this.openRegisterDlg.bind(this);
         this.onCloseDlg = this.onCloseDlg.bind(this);
 
+
+        
         //window.addEventListener("resize", this.update);
     }
 
@@ -31,17 +33,31 @@ export default class Landing extends Component{
     }
 
     onCloseDlg =() => {
-        this.setState({show:false})
+        this.props.resetHomePageProps();        
+        this.setState({show:false, redirectLogicActive: true})
     }
+    
     render() {
-        const {show, displayLogin, height, width} = this.state;
-        console.log("Landing Component", show, displayLogin);
-        console.log("Window Dimensions:", width, "X", height);
+        let {show, displayLogin, height, width, redirectLogicActive} = this.state;
+        
+        //if redirected from registration pop-up, display login pop-up
+        console.log("Properties", this.props, redirectLogicActive);
+        let email = null;
+        if(redirectLogicActive && this.props.show) {
+            console.log("redirecting to login");
+            email = this.props.email;
+            show = this.props.show;
+            displayLogin = this.props.displayLogin;
+            this.state.redirectLogicActive = false;
+        }
+        
+        console.log("Landing Component", email, show, displayLogin);
+        //console.log("Window Dimensions:", width, "X", height);
         return(
 
             <div ref="root">
 
-                <UserModal show={show} displayLogin={displayLogin} onHide={this.onCloseDlg}/>
+                <UserModal username= {email} show={show} displayLogin={displayLogin} onHide={this.onCloseDlg}/>
                 <Col style={{marginLeft: "auto",
                     marginRight: "auto"
                     }}>

@@ -1,4 +1,5 @@
-import React, { Component, useState } from 'react';
+import React, { Component, useState, useEffect, useCallback } from 'react';
+import {useLocation} from 'react-router-dom';
 import '../Styles/App.scss';
 import AppNavbar from '../Components/AppNavbar';
 import Landing from '../Components/Landing';
@@ -12,8 +13,29 @@ import background from './../images/alpinelake_bg.jpg';
 
 const Home = () => {
 
+        let location = useLocation();
+        const [forceRender, setForceRender] = useState(0);
+        console.log("location", location);
 
+        const replaceLocation = useCallback(() => {
+            if(location.state) location.state = null;
+          }, [location]);
+
+        useEffect(() => {
+            console.log("useEffect triggered");
+            replaceLocation();
+            console.log(location);    
+        }, []);
+
+        function ResetHomePageProps() {
+            console.log("Parent location state:", location.state)
+            if(location.state) location.state = "undefined";
+            setForceRender(forceRender => forceRender + 1);
+        }
+
+        
         return (
+            
             <div>
             <div className={"p5 mb-4 rounded-3"}
                 style={{ backgroundImage: `url(${background})`,
@@ -30,7 +52,21 @@ const Home = () => {
 
 
                     <Row className="text-center justify-content-center d-flex">
-                      <Landing/>
+                    
+                    {(location.state !== "undefined" && location.state != null) ?
+                        <div>
+                            <Landing 
+                                email={location.state.email}
+                                show={location.state.show} 
+                                displayLogin={location.state.displayLogin}
+                                resetHomePageProps = {ResetHomePageProps}/>
+                        </div>
+                        : <Landing email={null}
+                            show={false}
+                            displayLogin={false}
+                            resetHomePageProps = {ResetHomePageProps}/>
+                    }
+
                     </Row>
 
             </Container>

@@ -1,5 +1,5 @@
 import React, { Component, useState } from 'react';
-import { Link} from 'react-router-dom';
+import { Link, useLocation} from 'react-router-dom';
 import axios from 'axios';
 import { Button, Container, Card, CardHeader, CardTitle, CardBody, CardText, CardFooter, Label } from 'reactstrap';
 import AppNavbar from './AppNavbar';
@@ -13,9 +13,14 @@ import {getNameService as getNameSvc} from '../services/getNameService';
 import {convertFromRaw} from 'draft-js';
 import renderHTML from 'react-render-html';
 import {stateToHTML} from 'draft-js-export-html';
-
+import {withRouter} from '../Routes/withRouter'
 let commentCounter = 1;
+let location
 
+const UseLocation = () => {
+  location = useLocation()
+  return null
+}
 class PostView extends Component {
 
     emptyItem = {
@@ -24,8 +29,11 @@ class PostView extends Component {
         body: '',
     };
 
+
+
     constructor(props) {
         super(props);
+        var post_id;
         this.currentRole = "ROLE_GUEST";
         this.state = {
             title: '',
@@ -61,6 +69,9 @@ class PostView extends Component {
         //console.log(this.props.match.params.id);
         this.state.username = auth.getUsernameFromJWT();
 
+
+        this.post_id = this.props.params.id;
+        console.log("post id", this.post_id);
         const promise = auth.verifyLogin();
         if(promise) {
             promise.then(result => {
@@ -86,7 +97,7 @@ class PostView extends Component {
             upVoteDisabled: {},
             downVoteDisabled: {}
         }
-        await axios.get(`/api/posts/${this.props.location.state.params.id}`,
+        await axios.get(`/api/posts/${this.post_id}`,
         {
             headers: {
                 'Accept': 'application/json',
@@ -212,7 +223,7 @@ class PostView extends Component {
         console.log("Attempting to increment vote for", this.state.username, id);
         const vote = {
             id: null,
-            postId: this.props.location.state.params.id,
+            postId: this.post_id,
             commentId: id,
             username:  this.state.username,
             voteType: "UP",
@@ -232,7 +243,7 @@ class PostView extends Component {
 
            const vote = {
                 id: null,
-                postId: this.props.location.state.params.id,
+                postId: this.post_id,
                 commentId: id,
                 username:  this.state.username,
                 voteType: "DOWN",
@@ -371,7 +382,7 @@ class PostView extends Component {
             this.state.usersVoted[newComment.id] = {};
             this.state.usersVoted[newComment.id][this.state.username] = false;
         }
-        console.log("usersVoted after bsetComment Function?", this.state.usersVoted);
+        console.log("usersVoted after setComment Function?", this.state.usersVoted);
         this.setState({
           commentValue: ""
 
@@ -416,7 +427,7 @@ class PostView extends Component {
 //        });
         await axios({
             method: 'post',
-            url: `/api/posts/comments/${this.props.location.state.params.id}`,
+            url: `/api/posts/comments/${this.post_id}`,
             data: updatedComment,
             headers: {
                 'Accept': 'application/json',
@@ -576,4 +587,4 @@ class PostView extends Component {
         </div>
     }
 }
-export default PostView;
+export default withRouter(PostView);

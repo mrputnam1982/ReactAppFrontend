@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import { Router, Route, Switch} from 'react-router-dom';
+import { Route, Routes, Navigate} from 'react-router-dom';
 import { MemoryRouter } from 'react-router';
 import Home from './Pages/Home';
 import Posts from './Pages/Posts'
@@ -12,8 +12,7 @@ import PostEdit from "./Components/PostEdit";
 import PostView from "./Components/PostView";
 import AppNavbar from "./Components/AppNavbar";
 import history from "./Components/history";
-import {PrivateRoute} from './Routes/PrivateRoute';
-import {CustomRoute} from './Routes/CustomRoute';
+import {authenticationService as auth} from './services/authenticationService';
 export default class InnerApp extends React.PureComponent{
 
     render() {
@@ -21,28 +20,69 @@ export default class InnerApp extends React.PureComponent{
         return (
             <div>
 
-                <Router history={history}>
                   <div>
                   <AppNavbar/>
-                  <Switch>
-                    <CustomRoute path='/' exact={true} comp={Home}/>
-                    <PrivateRoute exact={true} path='/posts' comp={Posts}/>
-                    <PrivateRoute exact={true} path='/posts/edit/' comp={PostEdit}/>
-                    <PrivateRoute exact={true} path='/posts/view/' comp={PostView}/>
-                    <PrivateRoute exact={true} path='/registration' comp={RegistrationSuccess}/>
-                    <PrivateRoute exact={true} path='/profile' comp={Profile}/>
-                  </Switch>
+                  <Routes>
+                    <Route path='/'
+                        element={
+                            <customRoute path="/">
+                                <Home/>
+                            </customRoute>
+                        }
+
+                    />
+                    <Route path='/posts'
+                        element={
+                            <requireAuth redirectTo="/">
+                                <Posts/>
+                            </requireAuth>
+                        }
+                    />
+                    <Route path='/posts/edit/:id'
+                        element={
+                            <requireAuth redirectTo="/">
+                                <PostEdit/>
+                            </requireAuth>
+                        }
+                    />
+                    <Route path='/posts/view/:id'
+                        element= {
+                            <requireAuth redirectTo="/">
+                                <PostView/>
+                            </requireAuth>
+                        }
+                    />
+                    <Route path='/registration'
+                        element={
+                            <requireAuth redirectTo="/">
+                                <RegistrationSuccess/>
+                            </requireAuth>
+                        }
+                    />
+                    <Route path='/profile'
+                        element={
+                            <requireAuth redirectTo="/">
+                                <Profile/>
+                            </requireAuth>
+                        }
+                    />
+                  </Routes>
                   </div>
-                </Router>
 
             </div>
         );
     }
 }
-//     <Toast onClose={this.setHideToast} show={this.state.showToast} delay={3000} autohide>
-//                                  <Toast.Header>
-//                                    <strong className="me-auto">Bootstrap</strong>
-//                                    <small>11 mins ago</small>
-//                                  </Toast.Header>
-//                                  <Toast.Body>"Woohoo, you're reading this text in a Toast!"</Toast.Body>
-//                             </Toast>
+
+function requireAuth({children, redirectTo}) {
+    return auth.loggedIn === true
+        ? children
+        : <Navigate to={redirectTo}/>
+}
+
+function customRoute({children, path}) {
+
+    if(path === '/' && auth.loggedIn ) auth.logout();
+    else return children;
+
+}

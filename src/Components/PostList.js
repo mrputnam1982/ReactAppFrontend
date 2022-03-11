@@ -1,7 +1,8 @@
 import React, { Component } from 'react';
+import {useLocation} from 'react-router-dom';
 import { Button, ButtonGroup, Container, Table } from 'reactstrap';
 import AppNavbar from './AppNavbar';
-import { Link } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import {authHeader} from '../helpers/auth-header'
 import {ContentState, convertFromRaw} from 'draft-js';
 import {stateToHTML} from 'draft-js-export-html';
@@ -58,9 +59,8 @@ class PostList extends Component {
                         {role === "ROLE_ADMIN" ?
                             <ButtonGroup>
                                 <Button size="sm" color="primary"> <Link to={{
-                                    pathname: "posts/edit/",
-                                    state: {params: {id: post.id}}
-                                    }}>
+                                    pathname: `posts/edit/${post.id}`}}>
+                                }}
                                         Edit
                                     </Link>
                                 </Button>
@@ -68,10 +68,13 @@ class PostList extends Component {
                             </ButtonGroup> :
                             <div/>
                         }
-                        <h2 class="blog-post-title"><Link to={{
-                            pathname: "posts/view/",
-                            state: {params: {id: post.id}}
-                            }}>{post.title}</Link></h2>
+                        <h2 class="blog-post-title">
+                            <Link to={{
+                                pathname: `/posts/view/${post.id}`
+                                }}>
+                                {post.title}
+                            </Link>
+                        </h2>
                         <p class="blog-post-meta">{date}</p>
                         <p>{renderHTML(body)}</p>
                     </article>

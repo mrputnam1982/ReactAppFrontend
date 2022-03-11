@@ -45,7 +45,6 @@ class Posts extends Component {
                 }
             })
         }
-
         axios.get('api/posts', {
             headers: {
                 'Authorization': authHeader()

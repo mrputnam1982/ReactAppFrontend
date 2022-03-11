@@ -1,5 +1,5 @@
 import React, { Component, useState } from 'react';
-import { Link} from 'react-router-dom';
+import { useLocation, Link} from 'react-router-dom';
 import { Button, Container, Form, FormGroup, Input, Label } from 'reactstrap';
 import { EditorState, ContentState, convertFromRaw, convertToRaw} from 'draft-js'
 import RichTextEditor from '../Components/RichTextEditor'
@@ -7,6 +7,13 @@ import AppNavbar from './AppNavbar';
 import {authHeader} from '../helpers/auth-header'
 import {authenticationService as auth} from '../services/authenticationService';
 import axios from 'axios';
+
+let location
+
+const UseLocation = () => {
+  location = useLocation()
+  return null
+}
 
 class PostEdit extends Component {
 
@@ -32,7 +39,7 @@ class PostEdit extends Component {
     //    console.log(this.props.match.params.id)
 //        console.log(this.item);
         var post;
-        this.state.id = this.props.location.state.params.id;
+        this.state.id = location.state.post_id.pathname;
         const promise = auth.verifyLogin();
         if(promise === "DONE") {
            if (this.state.id !== 'new') {
@@ -123,6 +130,7 @@ class PostEdit extends Component {
         const heading = <h2>{this.state.item.id ? 'Edit Post' : 'New Post'}</h2>;
 
         return <div>
+            <UseLocation/>
             <Container>
                 {heading}
                 <Form onSubmit={this.handleSubmit}>

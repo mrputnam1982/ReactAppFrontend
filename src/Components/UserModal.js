@@ -36,7 +36,7 @@ export default class UserModal extends Component{
 
     render() {
 
-        let {show, displayLogin, onHide} = this.props;
+        let {username, show, displayLogin, onHide} = this.props;
         const loginToggle = this.state;
 
         return(
@@ -48,7 +48,7 @@ export default class UserModal extends Component{
                 </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    {displayLogin ? <LoginForm/> :
+                    {displayLogin ? <LoginForm username={username}/> :
                     <RegistrationForm/>}
                 </Modal.Body>
 

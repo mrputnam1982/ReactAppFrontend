@@ -15,8 +15,8 @@ export default class LoginForm extends Component {
     //...
     constructor(props) {
         super(props);
-        this.state = {email: "", password: "", show: false, loginFail: false}
-
+        this.state = {email: "", password: "", show: false, loginFail: false,
+            verificationError: false};
 
 //        if(props.error) {
 //            this.state = {
@@ -27,14 +27,21 @@ export default class LoginForm extends Component {
 //            this.state = { errcount: 0 }
 //        }
           this.handleSubmit = this.handleSubmit.bind(this);
+          this.resendVerificationEmail = this.resendVerificationEmail.bind(this);
     }
 
     resetUser=() => {
     this.setState({email: "", password: ""});
     }
 
+    async resendVerificationEmail() {
+        const promise = await auth.resendVerificationEmail(this.state.email, this.state.password);
+        
+        this.setState({verificationError: false});
+    }
     async handleSubmit(event) {
         var image = "";
+        //console.log(this.state.password);
         const promise = await auth.login(this.state.email, this.state.password)
         console.log("Loginform", auth.loggedIn);
         console.log(promise);
@@ -47,7 +54,11 @@ export default class LoginForm extends Component {
             history.push('/posts');
         }
         else {
-            this.setState({password: "", loginFail: true});
+            
+            if(auth.verificationError) {
+                this.setState({verificationError: true})
+            }
+            else this.setState({password: "", loginFail: true});
         }
     }
 
@@ -88,7 +99,8 @@ export default class LoginForm extends Component {
 //        }
 //    }
     render() {
-        const {email, password} = this.state;
+        let {email, password} = this.state;
+        if(this.props.username) email = this.props.username;    
         return(
             <div>
             <Card className={"border border-dark bg-dark text-white"}>
@@ -107,6 +119,7 @@ export default class LoginForm extends Component {
                 name="email"
                 value={email}
                 onChange={this.userChange}
+
                 onKeyDown={this.onKeyDown}
                 className={"bg-light"}
                 placeholder="Enter Email" />
@@ -122,10 +135,21 @@ export default class LoginForm extends Component {
                 onKeyDown={this.onKeyDown}
                 className={"bg-light"}
                 placeholder="Enter Password" />
+                
                 </Form.Group>
 
                 <Card.Footer style={{"textAlign":"right"}}>
                 {this.state.loginFail ? <Alert key='danger'> Invalid Credentials </Alert> : <div/>}
+                {this.state.verificationError ?
+                    <div> 
+                    <Alert key='info'>
+                        Verification Failed, send new confirmation link?
+                        <Button size="sm" variant="secondary" onClick={this.resendVerificationEmail}>
+                            Resend Email
+                        </Button>
+                    </Alert>
+                    </div> : <div/>
+                }
                 <Button size="sm" variant="primary" onClick={this.handleSubmit}>
                 <FontAwesomeIcon icon={faSave} />Submit
                 </Button>{" "}

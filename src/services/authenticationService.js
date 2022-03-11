@@ -12,6 +12,8 @@ export const authenticationService = {
     logout,
     getUsernameFromJWT,
     verifyLogin,
+    resendVerificationEmail,
+    verificationError: false,
     loggedIn: localStorage.getItem('currentUser') ? true: false,
     currentUser: currentUserSubject.asObservable(),
     get currentUserValue() { return currentUserSubject.value}
@@ -70,7 +72,12 @@ async function verifyLogin() {
     response = "DONE"
     return response;
 }
-
+async function resendVerificationEmail(username, password) {
+  await axios.post('/auth/reverify', {username, password})
+    .then(response => {
+      console.log(response);
+    }).catch(err => console.log(err))
+}
 async function login(username, password) {
     const cookies = new Cookies();
     var refresh_token_data = "";
@@ -99,7 +106,8 @@ async function login(username, password) {
         authenticationService.loggedIn = true;
         currentUserSubject.next(JSON.parse(localStorage.getItem('currentUser')));
         console.log("loggedIn", authenticationService.loggedIn)
-    }).catch(err => { console.log(err)
+    }).catch(err => { console.log(err.response.data)
+        if(err.response.data === "Client not enabled") authenticationService.verificationError = true;
         authenticationService.loggedIn = false;
     });
 

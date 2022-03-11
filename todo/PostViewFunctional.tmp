@@ -1,0 +1,624 @@
+import React, { Component, useState, useEffect } from 'react';
+import { Link} from 'react-router-dom';
+import axios from 'axios';
+import { Button, Container, Card, CardHeader, CardTitle, CardBody, CardText, CardFooter, Label } from 'reactstrap';
+import AppNavbar from './AppNavbar';
+import CommentBox from './CommentBox';
+import CommentList from './CommentList';
+import {authHeader} from '../helpers/auth-header'
+import moment from 'moment';
+import {authenticationService as auth} from '../services/authenticationService';
+import {getImageService as getImgSvc} from '../services/getImageService';
+import {getNameService as getNameSvc} from '../services/getNameService';
+import {convertFromRaw} from 'draft-js';
+import renderHTML from 'react-render-html';
+import {stateToHTML} from 'draft-js-export-html';
+
+let commentCounter = 1;
+
+export function PostViewFunctional() {
+
+    var emptyItem = {
+        title: '',
+        date: '',
+        body: '',
+    };
+
+    var currentRole = "ROLE_GUEST";
+    const [
+        title,
+        date,
+        body,
+        commentValue,
+        comments,
+        icons,
+        currentCount,
+        votes,
+        usersVoted,
+        upVoteDisabled,
+        downVoteDisabled,
+        username,
+        isExpanded,
+        isLoading
+    ] = useState(
+        '',
+        '',
+        '',
+        '',
+        [],
+        {},
+        commentCounter,
+        {},
+        {},
+        {},
+        {},
+        "",
+        false,
+        true
+    );
+
+    let effectReturnVarList = {};
+
+    useEffect(() => {
+    //    console.log(this.props.match.params.id)
+//        console.log(this.item);
+        //console.log(this.props.match.params.id);
+        username = auth.getUsernameFromJWT();
+
+        const promise = auth.verifyLogin();
+        if(promise) {
+            promise.then(result => {
+                const resolved = result;
+                let ret_list = {};
+                if(localStorage.getItem('currentUser'))
+                {
+                    effectReturnVarList = getPostAndComments();
+
+
+
+                }
+            })
+        }
+
+    }, [effectReturnVarList]);
+
+    const getPostAndComments = async() => {
+        currentRole = getNameSvc.currentRoleValue.roleName;
+            //console.log("ComponentDidMount currentRole", this.currentRole);
+        let title = "";
+        let date = "";
+        let body = "";
+        let comments = {};
+        let icons = {};
+        let currentCount = commentCounter;
+        let votes = {};
+        let usersVoted = {};
+        let upVoteDisabled = {};
+        let downVoteDisabled = {};
+
+        await axios.get(`/api/posts/${this.props.location.state.params.id}`,
+        {
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': authHeader()
+            }
+        }).then(response => {
+        title = response.data.title;
+        date = response.data.modifiedAt;
+        body = response.data.body;
+        comments = response.data.comments;
+        console.log(title, date, body, comments);
+
+        }).catch(err => {console.log(err)});
+        //occasionally a lone comment is deleted, leaving a null reference
+        //to comments in the parent Post Object, which needs to be discarded
+        if(comments && comments[0] === null) comments.pop();
+        if(comments && comments[0]) {
+        const usernameSet = new Set();
+        const imageSet = new Set();
+
+            comments.map(comment => {
+                    //console.log("Comment:", comment);
+                    currentCount = currentCount + 1;
+                    let tmpVotes = votes;
+                    tmpVotes[comment.id] = comment.votes;
+                    setVotes(tmpVotes);
+
+                    let tmpUsersVoted = usersVoted;
+                    tmpUsersVoted[comment.id] = {};
+                    setUsersVoted(tmpUsersVoted);
+                    if(comment.usersVoted !== null && Object.keys(comment.usersVoted).length >= 0)
+                    {
+
+                        usersVoted[comment.id] =
+                            comment.usersVoted[comment.id];
+                    }
+                    else usersVoted[comment.id][comment.posterUsername] = false;
+                    usernameSet.add(comment.posterUsername)
+            });
+
+
+            //when page is first loaded, ensure correct upvote and downvote buttons
+            //are enabled for the current user
+            comments.forEach(comment => {
+                let tmpUpVoteDisabled = upVoteDisabled;
+                tmpUpVoteDisabled[comment.id] = false;
+                setUpVoteDisabled(tmpUpVoteDisabled);
+
+
+                let tmpDownVoteDisabled = downVoteDisabled;
+                tmpDownVoteDisabled[comment.id] = false;
+                setDownVoteDisabled(tmpDownVoteDisabled);
+
+                if(comment.votes) {
+                    comment.votes.forEach(vote => {
+                        if(vote.username === username) {
+                            if(vote.voteType === "UP") {
+                                state.upVoteDisabled[comment.id] = true;
+                            }
+                            else if(vote.voteType === "DOWN") {
+                                state.downVoteDisabled[comment.id] = true;
+                            }
+                        }
+                    })
+                }
+            });
+
+            var usernameArr = Array.from(usernameSet);
+            var index = 0;
+            console.log(usernameArr);
+            await usernameArr.forEach(username => {
+                axios.get(`/api/getImage/${username}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'Authorization': authHeader()
+                    }
+
+                }).then(response => {
+                    if(response.data){
+                        console.log("image received", response.data);
+                        var key = response.data.username;
+                        let tmpIcons = icons;
+                        tmpIcons[key] = response.data.strBase64File;
+                        setIcons(tmpIcons);
+                    }
+                    index++;
+                    //call render when all images have been retrieved from the server
+
+                    if(index === usernameArr.length) {
+                        //update the commentCounter
+                        commentCounter = currentCount;
+                        let isLoading = false;
+                        return {title, date, body, comments, icons, votes, usersVoted, currentCount,
+                                upVoteDisabled, downVoteDisabled, isLoading}  ;
+
+                    }
+
+                });
+            })
+
+        }
+        else {
+            var imageData = getImgSvc.currentImageValue;
+            let tmpIcons = icons;
+            tmpIcons[imageData.username] = imageData.strBase64File;
+            setIcons(tmpIcons);
+            //update the commentCounter
+            commentCounter = currentCount;
+            votes = null;
+            usersVoted = null;
+            let isLoading = false;
+            return {title, date, body, comments, icons, votes, usersVoted, currentCount,
+                    upVoteDisabled, downVoteDisabled, isLoading};
+
+        }
+
+    }
+
+    const handleCommentValue = (e) => {
+        setCommentValue(e.target.value);
+    }
+    const incrementUpVote = async(id) => {
+        console.log("Attempting to increment vote for", this.state.username, id);
+        const vote = {
+            id: null,
+            postId: this.props.location.state.params.id,
+            commentId: id,
+            username:  this.state.username,
+            voteType: "UP",
+
+        }
+        setComments(updateCommentsWithVote(vote));
+        await setCommentWithVotes(id);
+        let tmpUpVoteDisabled = upVoteDisabled;
+        tmpUpVoteDisabled[id] = true;
+        setUpVoteDisabled(tmpUpVoteDisabled);
+
+        let tmpDownVoteDisabled = downVoteDisabled;
+        tmpDownVotedDisabled[id] = false;
+        setDownVoteDisabled(tmpDownVoteDisabled);
+
+    }
+
+    const incrementDownVote = async(id) =>{
+          console.log("Attempting to decrement vote for", this.state.username, id);
+
+           const vote = {
+                id: null,
+                postId: this.props.location.state.params.id,
+                commentId: id,
+                username:  this.state.username,
+                voteType: "DOWN",
+
+            }
+
+       setComments(updateCommentsWithVote(vote));
+        await setCommentWithVotes(id);
+        let tmpUpVoteDisabled = upVoteDisabled;
+        tmpUpVoteDisabled[id] = false;
+        setUpVoteDisabled(tmpUpVoteDisabled);
+
+        let tmpDownVoteDisabled = downVoteDisabled;
+        tmpDownVotedDisabled[id] = true;
+        setDownVoteDisabled(tmpDownVoteDisabled);
+
+    }
+
+   const updateCommentsWithVote = (vote) => {
+        //get existing vote for this user on this comment
+        let existingVote = null;
+        let updatedComments = null;
+        let votes = [];
+        let vote_pushed = false;
+        comments.forEach(comment => {
+            if(comment.id === vote.commentId) {
+                if(comment.votes) {
+                    comment.votes.forEach(tmp_vote => {
+                        if(tmp_vote.username === this.state.username) {
+                            votes.push(vote);
+                            vote_pushed = true;
+                        }
+                        else votes.push(tmp_vote)
+                    })
+                }
+                if(!vote_pushed) votes.push(vote);
+
+            }
+        })
+        console.log("Before updating votes", this.state.comments, votes);
+        updatedComments = comments.map(comment => {
+            console.log("Current comment", comment);
+            if(comment.id === vote.commentId) comment.votes = votes;
+            return comment;
+        })
+        console.log("After updating votes", updatedComments, votes);
+        return updatedComments;
+    }
+    const updateUserVoted = (id, val) => {
+        let tmpUsersVoted = usersVoted;
+        tmpUsersVoted[id][username] = val;
+        setUsersVoted(tmpUsersVoted);
+    }
+    const setCommentWithVotes = async(id) => {
+        var comment = null;
+        comments.forEach(com => {
+            if(com.id === id) comment = com;
+        })
+        var savedComment = await this.submitComment(comment);
+        var newComment = {
+            id: savedComment.id,
+            posterName: savedComment.posterName,
+            posterUsername: savedComment.posterUsername,
+            createdAt: savedComment.createdAt,
+            commentText: savedComment.commentText,
+            votes: savedComment.votes[savedComment.id],
+            usersVoted: savedComment.usersVoted
+        }
+
+        //modify existing comment to update votes and usersVoted
+        if(comments) {
+            var index  = this.state.comments.findIndex(comment => comment.id === id)
+            if(index >= 0) {
+               let tmpComments = comments;
+               tmpComments.splice(index, 1)
+               tmpComments.push(savedComment);
+               setComments(tmpComments);
+            }
+
+            else {
+                let tmpComments = comments;
+                tmpComments.push(savedComment);
+                setComments(tmpComments);
+            }
+//            this.state.comments.push(newComment);
+        }
+
+        if(Object.keys(votes) > 0)
+            votes[id] = savedComment.votes;
+        else {
+            setVotes({});
+            let tmpVotes = votes;
+            tmpVotes[id] = savedComment.votes;
+            setVotes(tmpVotes);
+        }
+
+        if(Object.keys(this.state.usersVoted) > 0)
+        {
+            let tmpUsersVoted = usersVoted;
+            tmpUsersVoted[id] = savedComment.usersVoted;
+            setUsersVoted(tmpUsersVoted);
+        }
+        else {
+            let tmpUsersVoted = {};
+            tmpUsersVoted[id] = savedComment.usersVoted;
+            setUsersVoted(tmpUsersVoted);
+
+        }
+//        var img = getImgSvc.currentImageValue
+//
+//        this.state.icons[savedComment.posterUsername] = img;
+        setCommentValue("");
+    }
+    const setComment = async() => {
+        commentCounter++;
+
+        var comment = {
+            id: null,
+            postId: this.props.match.params.id,
+            posterName: getNameSvc.currentNameValue,
+            posterUsername: auth.getUsernameFromJWT(),
+            commentText: commentValue,
+            votes: null,
+            usersVoted: null
+        }
+        var savedComment = await submitComment(comment);
+        var newComment = {
+            id: savedComment.id,
+            posterName: savedComment.posterName,
+            posterUsername: savedComment.posterUsername,
+            createdAt: savedComment.createdAt,
+            commentText: savedComment.commentText,
+            votes: savedComment.votes,
+            usersVoted: savedComment.usersVoted
+        }
+
+        if(comments) {
+            let tmpComments = comments;
+            tmpComments.push(newComment);
+            setComments(tmpComments);
+        }
+        else{
+            let tmpComments = []
+            tmpComments.push(newComment);
+            setComments(tmpComments);
+        }
+        if(votes) {
+            let tmpVotes = votes;
+            tmpVotes[newComment.id] = null;
+            setVotes(tmpVotes);
+        }
+        else{
+            let tmpVotes = votes;
+            tmpVotes[newComment.id] = null;
+            setVotes(tmpVotes);
+        }
+
+        var img = getImgSvc.currentImageValue
+
+        let tmpIcons = icons;
+        tmpIcons[savedComment.posterUsername] = img;
+        setIcons(tmpIcons);
+        console.log("usersVoted Undefined setComment Function?", usersVoted);
+        if(usersVoted == null || typeof(usersVoted) === 'undefined')
+        {
+            let tmpUsersVoted = {}
+            tmpUsersVoted[newComment.id] = {};
+            tmpUsersVoted[newComment.id][username] = false;
+            setUsersVoted(tmpUsersVoted);
+        }
+        console.log("usersVoted after bsetComment Function?", usersVoted);
+
+        setCommentValue("");
+
+    }
+    const setCommentLine = () => {
+        //console.log("username",auth.getUsernameFromJWT());
+        const promise = auth.verifyLogin();
+        if(promise) {
+            promise.then(result => {
+                const resolved = result;
+                if(localStorage.getItem('currentUser')) setComment();
+            })
+        } else console.log("Could not verify login credentials");
+
+
+
+        console.log("Upon comment submit", comments);
+
+    }
+
+    const submitComment = async(comment) => {
+        var savedComment = "";
+
+        const updatedComment = JSON.stringify(comment);
+        console.log("Comment to put", updatedComment);
+//        await fetch(`/api/posts/comments/${this.props.location.state.params.id}`,{
+//                method: 'post',
+//                body: updatedComment,
+//                 headers: {
+//                    'Accept': 'application/json',
+//                    'Content-Type': 'application/json',
+//                    'Authorization': authHeader()
+//            },
+//        }).then(response => {
+//            savedComment  = response.data;
+//
+//
+//        }).catch(err => {
+//            console.log(err)
+//        });
+        await axios({
+            method: 'post',
+            url: `/api/posts/comments/${this.props.location.state.params.id}`,
+            data: updatedComment,
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': authHeader()
+            }
+        }).then(response => {
+            savedComment = response.data;
+        }).catch(err => {
+            console.log("PutComment error", err);
+        });
+        console.log("SubmitComment", savedComment);
+        return savedComment;
+    }
+
+    const getIconImage = async(username) => {
+        await axios.get(`/api/getImage/${username}`, {
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': authHeader()
+            }
+
+        }).then(response => {
+
+            return response.data.strBase64File;
+        })
+    }
+    const submitCommentLine = (e) => {
+         e.preventDefault();
+         setCommentLine();
+    };
+    const enterCommentLine = (e) => {
+
+         if (e.charCode === 13) {
+            setCommentLine();
+         }
+    };
+
+    const onCommentClose = () => {
+
+        setCommentValue("");
+        setIsExpanded(false);
+        this.setState({commentValue: "", isExpanded: false});
+    }
+
+    const removeComment = async(id) => {
+        var currComments = this.state.comments;
+        var currCommentCount = 0;
+        var index = 0;
+        var commentIndex = 0;
+        currComments.forEach(comment => {
+            if(comment.id === id) commentIndex = index;
+            index++;
+        })
+
+        if(index >= 0) {
+            //update all other commentId's by decrementing higher id's by one
+
+            if(currComments.length === 1) currComments = [];
+            else {
+                currComments.splice(commentIndex, 1);
+
+            }
+            commentCounter--;
+            await axios.delete(`/api/posts/comments/${id}`, {
+                headers: {'Authorization': authHeader()}
+
+            }).then(response => {
+                //console.log("removeComment successful");
+                setComment(currComments);
+            })
+        }
+        else console.log("Could not find comment to delete");
+
+    }
+//
+//    handleChange(event) {
+//        const target = event.target;
+//        const value = target.value;
+//        const name = target.name;
+//        let item = {...this.state.item};
+//        item[name] = value;
+//        this.setState({item});
+//    }
+//        if(comments && comments.length > 0 && comments[0] === '') comments.shift();
+//        if(comments && comments.length === 0) comments = [];
+    console.log("render state");
+    if(effectReturnVarList.length === 11) {
+        setTitle(effectReturnVarList.shift());
+        setDate(effectReturnVarList.shift());
+        setBody(effectReturnVarList.shift());
+        setComments(effectReturnVarList.shift());
+        setIcons(effectReturnVarList.shift());
+        setCurrentCount(effectReturnVarList.shift());
+        setVotes(effectReturnVarList.shift());
+        setUsersVoted(effectReturnVarList.shift())
+        setUpVoteDisabled(effectReturnVarList.shift());
+        setDownVoteDisabled(effectReturnVarList.shift());
+        setIsLoading(effectReturnVarList.shift());
+    }
+    //console.log("render props", this.incrementUpVote, this.incrementDownVote);
+    //console.log("Icon dictionary keys", Object.keys(icons));
+    if(isLoading) { return <div/>}
+
+    var bodyHTML = stateToHTML(convertFromRaw(JSON.parse(body)));
+    var options = { month: 'long'};
+
+    var currentRole = this.currentRole;
+    var d = new Date( date * 1000);
+    var month = d.toLocaleDateString("en-US", options);
+    var dateStr = month + ", " + moment(d).format("Do, YYYY, h:mm a");
+    return <div>
+        <Container>
+            <Card>
+            <CardHeader>
+                <CardTitle>
+                    <h2><em>{title}</em></h2>
+                    {dateStr}
+                </CardTitle>
+
+            </CardHeader>
+            <CardBody>
+
+                <CardText>{renderHTML(bodyHTML)}</CardText>
+            </CardBody>
+
+            </Card>
+            <CommentBox
+                commentValue = {commentValue}
+                handleCommentValue = {handleCommentValue}
+                enterCommentLine = {enterCommentLine}
+                submitCommentLine = {submitCommentLine}
+                onClose = {onCommentClose}
+                isExpanded = {isExpanded}
+             />
+             {(typeof(comments) !== 'undefined' && comments && comments.length > 0) ?
+                <div>
+
+                    <CommentList
+                        role = {currentRole}
+                        comments={comments}
+                        incrementUpVote = {incrementUpVote}
+                        incrementDownVote = {incrementDownVote}
+                        upVoteDisabled = {upVoteDisabled}
+                        downVoteDisabled = {downVoteDisabled}
+                        icons={icons}
+                        removeComment = {removeComment}
+                        count = {comments.length}
+                        currentUsername = {username}
+                        />
+
+                </div> :
+                <div/>
+             }
+             <Button color="primary" tag={Link} to="/posts">Return to Posts</Button>
+        </Container>
+    </div>
+
+}
