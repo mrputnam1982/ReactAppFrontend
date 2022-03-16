@@ -34,7 +34,7 @@ class PostView extends Component {
     constructor(props) {
         super(props);
         var post_id;
-        this.currentRole = "ROLE_GUEST";
+
         this.state = {
             title: '',
             date: '',
@@ -48,6 +48,7 @@ class PostView extends Component {
             upVoteDisabled: {},
             downVoteDisabled: {},
             username: "",
+            commentProfiles: {},
             isExpanded : false,
             isLoading: true
         }
@@ -67,24 +68,43 @@ class PostView extends Component {
     //    console.log(this.props.match.params.id)
 //        console.log(this.item);
         //console.log(this.props.match.params.id);
-        this.state.username = auth.getUsernameFromJWT();
-
-
+        this.currentRole = "ROLE_GUEST";
         this.post_id = this.props.params.id;
         console.log("post id", this.post_id);
-        const promise = auth.verifyLogin();
-        if(promise) {
-            promise.then(result => {
-                const resolved = result;
-                if(localStorage.getItem('currentUser')) this.getPostAndComments();
-            })
-        }
-
+        this.state.username = auth.getUsernameFromJWT();
+        this.getPostAndComments();
+        await this.getUserProfiles();
+    
     }
 
+    async getUserProfiles() {
+        if(this.currentRole !== "ROLE_GUEST") {
+            
+            var commentProfiles = {};
+           
+            await axios.get('/api/clients/getAll', {
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': authHeader()
+                }
+            }).then(response => {
+                
+                response.data.forEach(client => {
+                    console.log("Client", client);
+                    commentProfiles[client.username] = client;
+                    
+                })
+
+                console.log("commentProfiles", commentProfiles);
+                this.setState({commentProfiles: commentProfiles});
+            }).catch(err => console.log(err));
+
+        }   
+    }
     async getPostAndComments() {
-        this.currentRole = getNameSvc.currentRoleValue.roleName;
-            //console.log("ComponentDidMount currentRole", this.currentRole);
+        if(getNameSvc.currentRoleValue) this.currentRole = getNameSvc.currentRoleValue.roleName;
+        //console.log("ComponentDidMount currentRole", this.currentRole);
         var state = {
             title: "",
             date: "",
@@ -102,7 +122,7 @@ class PostView extends Component {
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
-                'Authorization': authHeader()
+                
             }
         }).then(response => {
         state.title = response.data.title;
@@ -162,7 +182,7 @@ class PostView extends Component {
                     headers: {
                         'Accept': 'application/json',
                         'Content-Type': 'application/json',
-                        'Authorization': authHeader()
+                        
                     }
 
                 }).then(response => {
@@ -197,8 +217,15 @@ class PostView extends Component {
         }
         else {
             var imageData = getImgSvc.currentImageValue;
-            state.icons[imageData.username] = imageData.strBase64File;
-            //update the commentCounter
+            console.log(imageData)
+            if(imageData) {
+                state.icons[imageData.username] = imageData.strBase64File;
+            }
+            else {
+                var username = auth.currentUserValue;
+                state.icons[username] = null;
+            }
+                //update the commentCounter
             commentCounter = state.currentCount;
             var votes = null;
             var usersVoted = null;
@@ -298,52 +325,56 @@ class PostView extends Component {
             if(com.id === id) comment = com;
         })
         var savedComment = await this.submitComment(comment);
-        var newComment = {
-            id: savedComment.id,
-            posterName: savedComment.posterName,
-            posterUsername: savedComment.posterUsername,
-            createdAt: savedComment.createdAt,
-            commentText: savedComment.commentText,
-            votes: savedComment.votes[savedComment.id],
-            usersVoted: savedComment.usersVoted
-        }
-
-        //modify existing comment to update votes and usersVoted
-        if(this.state.comments) {
-            var index  = this.state.comments.findIndex(comment => comment.id === id)
-            if(index >= 0) {
-               this.state.comments.splice(index, 1)
-               this.state.comments.push(savedComment);
+        console.log("savedComment", savedComment);
+        if(savedComment) {
+            var newComment = {
+                id: savedComment.id,
+                posterName: savedComment.posterName,
+                posterUsername: savedComment.posterUsername,
+                createdAt: savedComment.createdAt,
+                commentText: savedComment.commentText,
+                votes: savedComment.votes[savedComment.id],
+                usersVoted: savedComment.usersVoted
             }
-            else this.state.comments.push(savedComment);
-//            this.state.comments.push(newComment);
-        }
 
-        if(Object.keys(this.state.votes) > 0)
-            this.state.votes[id] = savedComment.votes;
-        else {
-            this.state.votes = {};
-            this.state.votes[id] = savedComment.votes;
+            //modify existing comment to update votes and usersVoted
+            if(this.state.comments) {
+                var index  = this.state.comments.findIndex(comment => comment.id === id)
+                if(index >= 0) {
+                this.state.comments.splice(index, 1)
+                this.state.comments.push(savedComment);
+                }
+                else this.state.comments.push(savedComment);
+    //            this.state.comments.push(newComment);
+            }
+
+            if(Object.keys(this.state.votes) > 0)
+                this.state.votes[id] = savedComment.votes;
+            else {
+                this.state.votes = {};
+                this.state.votes[id] = savedComment.votes;
+            }
+            if(Object.keys(this.state.usersVoted) > 0)
+                this.state.usersVoted[id] = savedComment.usersVoted;
+            else {
+                this.state.usersVoted = {}
+                this.state.usersVoted[id] = savedComment.usersVoted;
+            }
+    //        var img = getImgSvc.currentImageValue
+    //
+    //        this.state.icons[savedComment.posterUsername] = img;
+            this.setState({
+            commentValue: ""
+            });
+            
         }
-        if(Object.keys(this.state.usersVoted) > 0)
-            this.state.usersVoted[id] = savedComment.usersVoted;
-        else {
-            this.state.usersVoted = {}
-            this.state.usersVoted[id] = savedComment.usersVoted;
-        }
-//        var img = getImgSvc.currentImageValue
-//
-//        this.state.icons[savedComment.posterUsername] = img;
-        this.setState({
-          commentValue: ""
-        });
     }
     async setComment() {
         commentCounter++;
 
         var comment = {
             id: null,
-            postId: this.props.match.params.id,
+            postId: this.props.params.id,
             posterName: getNameSvc.currentNameValue,
             posterUsername: auth.getUsernameFromJWT(),
             commentText: this.state.commentValue,
@@ -351,6 +382,7 @@ class PostView extends Component {
             usersVoted: null
         }
         var savedComment = await this.submitComment(comment);
+
         var newComment = {
             id: savedComment.id,
             posterName: savedComment.posterName,
@@ -384,7 +416,7 @@ class PostView extends Component {
         }
         console.log("usersVoted after setComment Function?", this.state.usersVoted);
         this.setState({
-          commentValue: ""
+        commentValue: ""
 
         });
 
@@ -425,30 +457,38 @@ class PostView extends Component {
 //        }).catch(err => {
 //            console.log(err)
 //        });
-        await axios({
-            method: 'post',
-            url: `/api/posts/comments/${this.post_id}`,
-            data: updatedComment,
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'Authorization': authHeader()
-            }
-        }).then(response => {
-            savedComment = response.data;
-        }).catch(err => {
-            console.log("PutComment error", err);
-        });
-        console.log("SubmitComment", savedComment);
-        return savedComment;
+        const promise = auth.verifyLogin();
+        //console.log("Auth VerifyLogin Promise in SubmitComment", promise);
+        if(promise) {
+            promise.then(res => {
+                axios({
+                    method: 'post',
+                    url: `/api/posts/comments/${this.post_id}`,
+                    data: updatedComment,
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'Authorization': authHeader()
+                    }
+                }).then(response => {
+                    console.log("Response in submitComment", response);
+                    savedComment = response.data;
+                }).catch(err => {
+                    console.log("PutComment error", err);
+                });
+                console.log("SubmitComment", savedComment);
+                return savedComment;
+
+            })
+        }
+       
     }
 
     async getIconImage(username) {
         await axios.get(`/api/getImage/${username}`, {
             headers: {
                 'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'Authorization': authHeader()
+                'Content-Type': 'application/json'
             }
 
         }).then(response => {
@@ -522,6 +562,7 @@ class PostView extends Component {
             upVoteDisabled,
             downVoteDisabled,
             icons,
+            commentProfiles,
             isExpanded,
             isLoading} = this.state;
 //        var comments = rawComments;
@@ -532,7 +573,8 @@ class PostView extends Component {
         //console.log("Icon dictionary keys", Object.keys(icons));
         if(isLoading) { return <div/>}
 
-        var bodyHTML = stateToHTML(convertFromRaw(JSON.parse(body)));
+        var bodyHTML = ""
+        if(body) bodyHTML = stateToHTML(convertFromRaw(JSON.parse(body)));
         var options = { month: 'long'};
 
         var currentRole = this.currentRole;
@@ -555,20 +597,22 @@ class PostView extends Component {
                 </CardBody>
 
                 </Card>
-                <CommentBox
-                    commentValue = {commentValue}
-                    handleCommentValue = {this.handleCommentValue}
-                    enterCommentLine = {this.enterCommentLine}
-                    submitCommentLine = {this.submitCommentLine}
-                    onClose = {this.onCommentClose}
-                    isExpanded = {this.isExpanded}
-                 />
+                {auth.loggedIn ?
+                    <CommentBox
+                        commentValue = {commentValue}
+                        handleCommentValue = {this.handleCommentValue}
+                        enterCommentLine = {this.enterCommentLine}
+                        submitCommentLine = {this.submitCommentLine}
+                        onClose = {this.onCommentClose}
+                        isExpanded = {this.isExpanded}
+                    /> : <div/> }
                  {(typeof(comments) !== 'undefined' && comments && comments.length > 0) ?
                     <div>
 
                         <CommentList
                             role = {currentRole}
                             comments={comments}
+                            commentProfiles={commentProfiles}
                             incrementUpVote = {this.incrementUpVote}
                             incrementDownVote = {this.incrementDownVote}
                             upVoteDisabled = {upVoteDisabled}
@@ -577,6 +621,7 @@ class PostView extends Component {
                             removeComment = {this.removeComment}
                             count = {comments.length}
                             currentUsername = {this.state.username}
+                            currentRole = {this.currentRole}
                             />
 
                     </div> :

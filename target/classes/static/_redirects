@@ -1,0 +1,3 @@
+/api/*   https://mrputnam-blog-server.herokuapp.com/:splat
+/auth/register  https://mrputnam-blog-server.herokuapp.com/:splat
+/auth/login     https://mrputnam-blog-server.herokuapp.com/:splat

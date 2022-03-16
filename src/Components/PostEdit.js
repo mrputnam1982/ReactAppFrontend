@@ -1,35 +1,40 @@
 import React, { Component, useState } from 'react';
-import { useLocation, Link} from 'react-router-dom';
+import { useLocation, Link, Navigate} from 'react-router-dom';
 import { Button, Container, Form, FormGroup, Input, Label } from 'reactstrap';
 import { EditorState, ContentState, convertFromRaw, convertToRaw} from 'draft-js'
 import RichTextEditor from '../Components/RichTextEditor'
 import AppNavbar from './AppNavbar';
 import {authHeader} from '../helpers/auth-header'
 import {authenticationService as auth} from '../services/authenticationService';
+import {getNameService as getNameSvc} from '../services/getNameService';
+import {withRouter} from '../Routes/withRouter';
 import axios from 'axios';
 
 let location
 
-const UseLocation = () => {
-  location = useLocation()
-  return null
-}
+// const UseLocation = () => {
+//   location = useLocation()
+//   return null
+// }
 
 class PostEdit extends Component {
 
     emptyItem = {
         title: '',
         body: '',
+        author: ''
     };
 
     constructor(props) {
         super(props);
         this.state = {
-            id: "",
+            post_id: "",
             value: "",
             item: this.emptyItem,
-            editorState: EditorState.createEmpty()
+            editorState: EditorState.createEmpty(),
+            redirectToPosts: false
         };
+        this.state.item.author = getNameSvc.currentNameValue;
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
         //this.onChangeRichTextEditor = this.onChangeRichTextEditor(this);
@@ -39,11 +44,14 @@ class PostEdit extends Component {
     //    console.log(this.props.match.params.id)
 //        console.log(this.item);
         var post;
-        this.state.id = location.state.post_id.pathname;
+        // console.log("Location", location);
+        // console.log("Prestate", this.state
+        console.log("Props", this.props);
+        this.state.post_id = this.props.params.id;
         const promise = auth.verifyLogin();
         if(promise === "DONE") {
-           if (this.state.id !== 'new') {
-               await axios.get(`/api/posts/${this.state.id}`,
+           if (this.state.post_id !== 'new') {
+               await axios.get(`/api/posts/${this.state.post_id}`,
                    {
                        headers: {
                            'Accept': 'application/json',
@@ -65,8 +73,8 @@ class PostEdit extends Component {
             promise.then(result => {
                 const resolved = result;
                 if(localStorage.getItem('currentUser')) {
-                    if (this.state.id !== 'new') {
-                        axios.get(`/api/posts/${this.state.id}`,
+                    if (this.state.post_id !== 'new') {
+                        axios.get(`/api/posts/${this.state.post_id}`,
                             {
                                 headers: {
                                     'Accept': 'application/json',
@@ -109,56 +117,75 @@ class PostEdit extends Component {
     async handleSubmit(event) {
         event.preventDefault();
         const {item, editorState} = this.state;
-
         item.body = JSON.stringify(convertToRaw(this.state.editorState.getCurrentContent()));
-        console.log(item);
-        await fetch('/api/posts' + (item.id ? '/' + item.id : ''), {
-            method: (item.id) ? 'PUT' : 'POST',
+        console.log(JSON.stringify(item));
+        if(item.id) {
+            axios.put(`/api/posts/${item.id}`, item, {
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': authHeader()
+                    }
+                
+                }).then(response => {
+                    this.setState({redirectToPosts: true})
+            
+                }).catch(err => console.log(err.response));
+
+        }
+        else {
+            await axios.post(`/api/posts`, item, {
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
                 'Authorization': authHeader()
-            },
-            body: JSON.stringify(item),
-        });
-        this.props.history.push('/posts');
+            }
+                
+            }).then(response => {
+                this.setState({redirectToPosts: true})
+        
+            }).catch(err => console.log(err.response));
+        }
     }
-
     render() {
         //console.log("editor text", editorState.getCurrentContent().getPlainText(''));
         //const {editorStateUpdated} = this.state.editorState;
         const heading = <h2>{this.state.item.id ? 'Edit Post' : 'New Post'}</h2>;
+        if(this.state.redirectToPosts) {
+            this.state.redirectToPosts = false;
+            return <Navigate to="/posts"/>
+        }
+        else {
+            return <div>
+                <Container>
+                    {heading}
+                    <Form onSubmit={this.handleSubmit}>
+                        <FormGroup>
+                            <Label for="title">Title</Label>
+                            <Input type="text" name="title" id="title" value={this.state.item.title || ''}
+                                onChange={this.handleChange} autoComplete="title"/>
+                        </FormGroup>
+                        <FormGroup>
+                            <Label for="body">Body</Label>
 
-        return <div>
-            <UseLocation/>
-            <Container>
-                {heading}
-                <Form onSubmit={this.handleSubmit}>
-                    <FormGroup>
-                        <Label for="title">Title</Label>
-                        <Input type="text" name="title" id="title" value={this.state.item.title || ''}
-                               onChange={this.handleChange} autoComplete="title"/>
-                    </FormGroup>
-                    <FormGroup>
-                        <Label for="body">Body</Label>
+                            {this.onChangeRichTextEditor ?
 
-                        {this.onChangeRichTextEditor ?
+                                <RichTextEditor
+                                    editorState={this.state.editorState}
+                                    onChange={this.onChangeRichTextEditor}
+                                /> :
+                                <div/>
+                            }
 
-                            <RichTextEditor
-                                editorState={this.state.editorState}
-                                onChange={this.onChangeRichTextEditor}
-                            /> :
-                            <div/>
-                        }
-
-                    </FormGroup>
-                    <FormGroup>
-                        <Button color="primary" type="submit">Save</Button>{' '}
-                        <Button color="secondary" tag={Link} to="/posts">Cancel</Button>
-                    </FormGroup>
-                </Form>
-            </Container>
-        </div>
+                        </FormGroup>
+                        <FormGroup>
+                            <Button color="primary" type="submit">Save</Button>{' '}
+                            <Button color="secondary" tag={Link} to="/posts">Cancel</Button>
+                        </FormGroup>
+                    </Form>
+                </Container>
+            </div>
+        }
     }
 }
-export default PostEdit;
+export default withRouter(PostEdit);

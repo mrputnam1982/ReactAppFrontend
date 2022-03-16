@@ -1,7 +1,7 @@
 import React, { Component, useState } from 'react';
 import '../Styles/App.scss';
 import AppNavbar from '../Components/AppNavbar';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { Button, Container, Row, Col } from 'reactstrap';
 import {authenticationService as auth} from '../services/authenticationService'
 import {getNameService as getNameSvc} from '../services/getNameService'
@@ -16,11 +16,12 @@ class Posts extends Component {
 
     constructor(props) {
         super(props);
-        this.state = {role: "ROLE_GUEST", posts: [], currentPage: []};
+        this.state = {role: "ROLE_GUEST", posts: [], currentPage: [], redirectToPostView: false};
         this.subscriptionRole = null;
         this.goToNextPage = this.goToNextPage.bind(this);
         this.goToPrevPage = this.goToPrevPage.bind(this);
         this.updatePagination  = this.updatePagination.bind(this);
+        this.redirect = this.redirect.bind(this);
     }
 
     componentWillMount() {
@@ -45,11 +46,7 @@ class Posts extends Component {
                 }
             })
         }
-        axios.get('api/posts', {
-            headers: {
-                'Authorization': authHeader()
-           }
-        }).then(
+        axios.get('api/posts').then(
             res => {
                 console.log(res.data);
 
@@ -120,6 +117,9 @@ class Posts extends Component {
         if(Pagination.currentPage === 1) return true;
         else return false;
     }
+    redirect() {
+        this.setState({redirectToPostView: true})
+    }
     render() {
         const currRole = this.state.role.roleName;
         const currentPage = this.state.currentPage;
@@ -127,18 +127,20 @@ class Posts extends Component {
         const nextButtonDisabled = this.isLastPage();
 //        console.log(currRole);
         console.log("CurrentPage", currentPage);
+        var id = "new"
+
+
         return (
             <div>
                 <Container fluid>
                     <Row>
-                        {currRole === "ROLE_ADMIN" ?
+                        {(currRole === "ROLE_ADMIN" || currRole === "ROLE_USER") ?
                             <div className="float-right">
-                                <Button color="success"><Link to={{
-                                    pathname: "posts/edit/",
-                                    state: {params: {id: "new"}}
-                                }}>Add Post
-                                </Link>
+                                <Link to={{pathname:`/posts/edit/${id}`}}>
+                                <Button color="primary">
+                                    Add Post                              
                                 </Button>
+                                </Link>
                             </div>
                             :
                             <div/>
@@ -165,6 +167,7 @@ class Posts extends Component {
                 </Container>
             </div>
         );
+  
     }
 }
 export default Posts;

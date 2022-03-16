@@ -32,12 +32,9 @@ export default class InnerApp extends React.PureComponent{
 
                     />
                     <Route path='/posts'
-                        element={
-                            <requireAuth redirectTo="/">
-                                <Posts/>
-                            </requireAuth>
-                        }
+                        element={<Posts/>}                       
                     />
+    
                     <Route path='/posts/edit/:id'
                         element={
                             <requireAuth redirectTo="/">
@@ -45,12 +42,9 @@ export default class InnerApp extends React.PureComponent{
                             </requireAuth>
                         }
                     />
+
                     <Route path='/posts/view/:id'
-                        element= {
-                            <requireAuth redirectTo="/">
-                                <PostView/>
-                            </requireAuth>
-                        }
+                        element= {<PostView/>}
                     />
                     <Route path='/registration'
                         element={

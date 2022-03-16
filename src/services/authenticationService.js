@@ -152,5 +152,4 @@ function logout() {
     localStorage.removeItem("role");
     localStorage.removeItem("name");
     localStorage.removeItem("dataUrl");
-    history.push('/');
 }

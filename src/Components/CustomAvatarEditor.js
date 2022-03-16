@@ -119,6 +119,7 @@ class CustomAvatarEditor extends Component {
                                  <ImagePicker
                                  extensions={['jpg', 'jpeg', 'png']}
                                  dims={{minWidth: 100, maxWidth: 500, minHeight: 100, maxHeight: 500}}
+
                                  onChange={base64 => {
                                      console.log("Image chosen:", base64);
                                      this.state.image =  base64

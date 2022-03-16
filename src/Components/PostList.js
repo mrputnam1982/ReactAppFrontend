@@ -58,12 +58,11 @@ class PostList extends Component {
                     <article class="blog-post">
                         {role === "ROLE_ADMIN" ?
                             <ButtonGroup>
-                                <Button size="sm" color="primary"> <Link to={{
-                                    pathname: `posts/edit/${post.id}`}}>
-                                }}
-                                        Edit
+                                 <Link style={{textColor: "white"}}
+                                    to={{pathname: `/posts/edit/${post.id}`}}>
+                                        <Button size="sm" color="primary">Edit</Button>
                                     </Link>
-                                </Button>
+
                                 <Button size="sm" color="danger" onClick={() => this.remove(post.id)}>Delete</Button>
                             </ButtonGroup> :
                             <div/>
@@ -75,6 +74,7 @@ class PostList extends Component {
                                 {post.title}
                             </Link>
                         </h2>
+                        <p class="blog-post-meta">{post.author}</p>
                         <p class="blog-post-meta">{date}</p>
                         <p>{renderHTML(body)}</p>
                     </article>

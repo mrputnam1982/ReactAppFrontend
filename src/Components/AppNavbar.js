@@ -1,13 +1,13 @@
 import React, {Component, useState} from 'react';
 import {Dropdown, Navbar, NavbarBrand, Nav, Button, Container, Row, Col} from 'react-bootstrap';
-import {Link} from 'react-router-dom';
+import {Link, Navigate} from 'react-router-dom';
 import {authenticationService} from '../services/authenticationService';
 import {getNameService as getNameSvc} from '../services/getNameService';
 import {getImageService as getImgSvc} from '../services/getImageService';
 import UserModal from './UserModal';
 import {Subject} from 'rxjs';
 import Avatar from 'react-avatar'
-import history from './history';
+import history from '../Components/history'
 import '../Styles/App.scss';
 
 export default class AppNavbar extends Component {
@@ -18,15 +18,19 @@ export default class AppNavbar extends Component {
             displayLogin: true,
             displayDropdown: false,
             name: "",
-            avatar: ""
+            avatar: "",
+            redirectToLogin: false,
+            redirectToPosts: false,
+            redirectToProfile: false
         };
         this.toggle = this.toggle.bind(this);
         this.loginLinkName = "Login"
 
         this.isDlgOpen = false;
         this.logout = this.logout.bind(this);
+        this.onClickPostRedirect = this.onClickPostRedirect.bind(this);
+        this.onClickProfileRedirect = this.onClickProfileRedirect.bind(this);
     }
-
 
 
     componentDidMount() {
@@ -77,9 +81,16 @@ export default class AppNavbar extends Component {
 
     logout() {
         authenticationService.logout();
-        history.push('/');
+        this.setState({redirectToLogin: true});
     }
 
+    onClickPostRedirect() {
+        this.setState({redirectToPosts: true})
+    }
+
+    onClickProfileRedirect() {
+        this.setState({redirectToProfile: true})
+    }
     render() {
         const NavbarBrandStyle = {
             fontSize: "50px",
@@ -88,12 +99,28 @@ export default class AppNavbar extends Component {
         const name = this.state.name;
         const avatar = this.state.avatar;
 
+        if(this.state.redirectToLogin) {
+            this.state.redirectToLogin = false;
+            history.push("/");
+            //return <Navigate to="/"/>
+        }
+        if(this.state.redirectToPosts) {
+            this.state.redirectToPosts = false;
+            history.push("/posts")
+        }
+        if(this.state.redirectToProfile) {
+            this.state.redirectToProfile = false;
+            history.push("/profile")
+        }
         return (
 
             <Navbar color="light" expand="md" class="px-2">
+
                 <NavbarBrand style={NavbarBrandStyle}>
-                    ReactApp
+                    <Link to='/' style={{textDecoration: "none"}}>ReactApp</Link>
                 </NavbarBrand>
+            
+
             {name ? (
                 <Nav className="ms-auto" style={{marginRight: "20px"}}>
                     <Container>
@@ -120,14 +147,18 @@ export default class AppNavbar extends Component {
 
                                         <Dropdown.Toggle variant="success"> Welcome, {name} </Dropdown.Toggle>
                                         <Dropdown.Menu>
-                                        <Dropdown.Item>
-                                            <Link to="/posts">View Posts</Link>
-                                        </Dropdown.Item>
-                                        <Dropdown.Item>
-                                            <Link to="/profile">View/Edit Profile</Link>
-                                        </Dropdown.Item>
-                                        <Dropdown.Item>Contact Us</Dropdown.Item>
-                                        <Dropdown.Item onClick={this.logout}>Logout</Dropdown.Item>
+                                           
+                                            <Dropdown.Item onClick={this.onClickPostRedirect}>
+                                                View Posts
+                                            </Dropdown.Item>
+                                            
+                                       
+                                            <Dropdown.Item onClick={this.onClickProfileRedirect}>
+                                                View/Edit Profile
+                                            </Dropdown.Item>
+                                        
+                                            <Dropdown.Item>Contact Us</Dropdown.Item>
+                                            <Dropdown.Item onClick={this.logout}>Logout</Dropdown.Item>
                                         </Dropdown.Menu>
                                     </Dropdown> )
                                     : <div/>
