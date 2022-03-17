@@ -28,8 +28,10 @@ const parseJwt = (token) => {
 };
 
 function getUsernameFromJWT() {
-    const user = JSON.parse(localStorage.getItem('currentUser')).token;
-    return parseJwt(user).sub;
+    if(localStorage.getItem('currentUser')) {
+      const user = JSON.parse(localStorage.getItem('currentUser')).token;
+      return parseJwt(user).sub; 
+    } else return "";
 }
 
 async function verifyLogin() {

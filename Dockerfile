@@ -1,4 +1,3 @@
-
 # Pull node.js image
 FROM node:12-alpine as build
 WORKDIR /
@@ -9,7 +8,7 @@ RUN npm install
 COPY ./src /src
 
 COPY ./public /public
-
+RUN echo $(ls -alF /src/Pages/)
 RUN npm run build
 
 # Pull NGINX image

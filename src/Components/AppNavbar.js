@@ -106,18 +106,18 @@ export default class AppNavbar extends Component {
         }
         if(this.state.redirectToPosts) {
             this.state.redirectToPosts = false;
-            history.push("/posts")
+            history.push("/posts");
         }
         if(this.state.redirectToProfile) {
             this.state.redirectToProfile = false;
-            history.push("/profile")
+            history.push("/profile");
         }
         return (
 
             <Navbar color="light" expand="md" class="px-2">
 
                 <NavbarBrand style={NavbarBrandStyle}>
-                    <Link to='/' style={{textDecoration: "none"}}>ReactApp</Link>
+                    <Link to='/' style={{textDecoration: "none"}}>ReactBlog</Link>
                 </NavbarBrand>
             
 

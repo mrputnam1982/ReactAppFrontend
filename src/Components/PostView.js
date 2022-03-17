@@ -71,6 +71,7 @@ class PostView extends Component {
         this.currentRole = "ROLE_GUEST";
         this.post_id = this.props.params.id;
         console.log("post id", this.post_id);
+        
         this.state.username = auth.getUsernameFromJWT();
         this.getPostAndComments();
         await this.getUserProfiles();

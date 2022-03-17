@@ -60,14 +60,27 @@ export default class RegistrationForm extends Component {
                 
         })
         .catch(err => {
-            console.log("Caught error", err.response.data.message);
-            if(err.response.data.message === (this.state.email + " already exists!")) {
-                //user exists, redirect to login dialog
-                console.log("redirect to login");
+            console.log("Top level error", err.response);
+            if(err.response.data.confirmPassword) {
+                let errors = this.state.errors;
+                errors.confirmPassword = err.response.data.confirmPassword;
+                this.setState({errors : errors});
+            } else if(err.response.data.password) {
+                let errors = this.state.errors;
+                errors.password = err.response.data.password;
+                this.setState({errors : errors});
+            }
+            else
+            {
+                console.log("Caught error", err.response.data.message);
+                if(err.response.data.message === (this.state.email + " already exists!")) {
+                    //user exists, redirect to login dialog
+                    console.log("redirect to login");
 
-                this.setState({redirect: true});
+                    this.setState({redirect: true});
+                    
                 
-            
+                }
             }
         });
     }

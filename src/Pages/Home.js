@@ -44,7 +44,7 @@ const Home = () => {
         }
    
         if(nav === "/posts") {
-            nav = "/";
+            
             return <Navigate to="/posts"/>
         }
         else {
@@ -84,7 +84,7 @@ const Home = () => {
                                     : <Landing email={null}
                                         show={false}
                                         displayLogin={false}
-                                        resetHomePageProps = {null}/>
+                                        resetHomePageProps = {ResetHomePageProps}/>
                                 }
 
                                 </Row>
