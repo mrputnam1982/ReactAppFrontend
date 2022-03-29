@@ -1,0 +1,3 @@
+Bugs React Web Blog
+
+-Upon deleting all posts on last page other than first page, posts should update to show the first page..

@@ -16,7 +16,7 @@ FROM nginx:1.15
 # Move all build files to NGINX serve folder
 COPY --from=build /build /usr/share/nginx/html
 # Setup NGINX with config
-COPY ./build /var/www
+COPY --from=build /build /var/www
 COPY ./nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 ENTRYPOINT ["nginx","-g","daemon off;"]

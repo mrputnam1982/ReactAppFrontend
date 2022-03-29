@@ -7,11 +7,16 @@ export const getImageService = {
     get currentImageValue() {
         var image = localStorage.getItem("dataUrl");
         if(image) return JSON.parse(image);
-        else return currentImageSubject.value;
+        else {
+            console.log(currentImageSubject.value);
+            return currentImageSubject.value;
+        }
     }
 }
 
 function setImage(image) {
+    console.log("setImage", image);
+    console.log("dataUrl in localStorage", localStorage.getItem("dataUrl"));
     currentImageSubject.next(image);
     localStorage.setItem("dataUrl", JSON.stringify(image));
 }

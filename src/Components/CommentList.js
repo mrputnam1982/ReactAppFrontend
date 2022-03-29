@@ -46,45 +46,45 @@ class CommentList extends Component {
     }
 
 
-    renderTooltip = (props) => (
+        renderTooltip = (props) => (
 
-        <Popover id="avatar-tooltip" {...props}>
-            <Popover.Header>
+            <Popover id="avatar-tooltip" {...props}>
+                <Popover.Header>
 
-                {props.popper.state ?
-                    <div>
-                        <b>Name:</b> {props.popper.state.options.name}
-                        <br/>
-                        {props.popper.state.options.title ?
-                            <i>{props.popper.state.options.title}</i> : <div/>
-                        }    
+                    {props.popper.state ?
+                        <div>
+                            <b>Name:</b> {props.popper.state.options.name}
+                            <br/>
+                            {props.popper.state.options.title ?
+                                <i>{props.popper.state.options.title}</i> : <div/>
+                            }    
+                        </div>
+                        : <div/>
+                    }
+
+                </Popover.Header>
+                <Popover.Body>
+                    {props.popper.state ?
+                        <div>
+
+                            {/* {JSON.stringify(props.popper.state.options.userProfile.profileHeading)} */}
+                            <b>A little about me:</b> {props.popper.state.options.body ?
+                                <div>
+                                    {renderHTML(
+                                        stateToHTML(
+                                            convertFromRaw(
+                                                JSON.parse(props.popper.state.options.body))))}
+                                </div>
+                                : <div>N/a</div> }
+                        </div>
+                    : <div>
+                        Loading...
                     </div>
-                    : <div/>
-                }
-
-            </Popover.Header>
-            <Popover.Body>
-                {props.popper.state ?
-                    <div>
-
-                        {/* {JSON.stringify(props.popper.state.options.userProfile.profileHeading)} */}
-                        <b>A little about me:</b> {props.popper.state.options.body ?
-                            <div>
-                                {renderHTML(
-                                    stateToHTML(
-                                        convertFromRaw(
-                                            JSON.parse(props.popper.state.options.body))))}
-                            </div>
-                            : <div>N/a</div> }
-                    </div>
-                : <div>
-                    Loading...
-                </div>
-                }
-            </Popover.Body>
-        </Popover>
-    
-    );
+                    }
+                </Popover.Body>
+            </Popover>
+        
+        );
 
     refreshCommentList() {
 
@@ -104,7 +104,7 @@ class CommentList extends Component {
         console.log("CurrentRole", currentRole );
         console.log("Comment list properties", this.props);
         //if(count === this.state.commentCount) return;
-
+        console.log("current username", currentUsername);
         console.log("Refreshing the comment component",comments, icons, role)
         //console.log("Icon dictionary keys", Object.keys(icons));
         this.commentListSorted = comments.sort(function(a,b) {
@@ -144,7 +144,7 @@ class CommentList extends Component {
                                     {icons[val.posterUsername] ?
                                         <div>
                                         {commentProfiles[val.posterUsername] ?
-                                            <div>
+                                            <div style={{display:"flex"}}>
                                             <OverlayTrigger
                                                 placement="top"
                                                 delay={{ show: 250, hide: 400 }}
@@ -154,18 +154,26 @@ class CommentList extends Component {
                                                     title : commentProfiles[val.posterUsername].profileHeading,
                                                     body: commentProfiles[val.posterUsername].profileInfo}} >
                                             <div style={{width: "75px"}}>   
-                                            <Avatar size="50"
+                                            <Avatar
+                                                style={{pointerEvents: 'none'}}
+                                                size="50"
                                                 round={true}
                                                 name={val.posterName}
                                                 src={icons[val.posterUsername]}/>
                                             </div>
                                             </OverlayTrigger>
+                                            <b>{val.posterName}</b>
                                             </div>
-                                        : <div style={{width: "75px"}}>   
-                                            <Avatar size="50"
+                                        : <div style={{display:"flex"}}>
+                                            <div style={{width: "75px"}}>   
+                                            <Avatar 
+                                                style={{pointerEvents: 'none'}}
+                                                size="50"
                                                 round={true}
                                                 name={val.posterName}
                                                 src={icons[val.posterUsername]}/>
+                                            </div>
+                                            <b>{val.posterName}</b>
                                             </div>
                                         }
                                    
@@ -173,7 +181,7 @@ class CommentList extends Component {
                                         :
                                         <div>
                                             {commentProfiles[val.posterUsername] ?
-                                                <div>
+                                                <div style={{display:"flex"}}>
                                                 <OverlayTrigger
                                                     placement="top"
                                                     delay={{ show: 250, hide: 400 }}
@@ -182,18 +190,27 @@ class CommentList extends Component {
                                                         {{name  : commentProfiles[val.posterUsername].name,
                                                         title : commentProfiles[val.posterUsername].profileHeading,
                                                         body: commentProfiles[val.posterUsername].profileInfo}} >
+                                                
                                                 <div style={{width: "75px"}}>   
-                                                <Avatar size="50"
+                                                <Avatar 
+                                                    style={{pointerEvents: 'none'}}
+                                                    size="50"
                                                     round={true}
                                                     name={val.posterName}/>
                                                 </div>
                                                 
                                                 </OverlayTrigger>
+                                                <b>{val.posterName}</b>
                                                 </div>: 
+                                                <div style={{display:"flex"}}>
                                                  <div style={{width: "75px"}}>   
-                                                 <Avatar size="50"
+                                                 <Avatar 
+                                                    style={{pointerEvents: 'none'}}
+                                                    size="50"
                                                      round={true}
                                                      name={val.posterName}/>
+                                                 </div>
+                                                 <b>{val.posterName}</b>
                                                  </div>
                                             }
                                         </div>

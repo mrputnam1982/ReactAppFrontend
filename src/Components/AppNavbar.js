@@ -33,8 +33,12 @@ export default class AppNavbar extends Component {
     }
 
 
-    componentDidMount() {
+    async componentDidMount() {
         //console.log(authenticationService.loggedIn);
+        this.state.avatar = "";
+        this.state.name = "";
+        this.state.displayDropdown = false;
+
         this.subscriptionLogOut = authenticationService.currentUser.subscribe(user => {
             console.log("Logout?", user);
             if(user === null) this.setState({name:"", displayDropdown: false})
@@ -54,24 +58,34 @@ export default class AppNavbar extends Component {
 
         })
 
-        this.subscriptionImageSet = getImgSvc.currentImage.subscribe(image => {
+        this.subscriptionImageSet = await getImgSvc.currentImage.subscribe(image => {
+            //console.log("checking profile icon availability", getImgSvc.currentImageValue);
             if(authenticationService.loggedIn === true)
             {
-
+                
                 if(image === "undefined" || !image) {
-
-                image = getImgSvc.currentImageValue;
+                    
+                    image = getImgSvc.currentImageValue;
                 //console.log("Image observable subscription triggered", image);
                 }
                 this.setState({avatar: image})
             }
 
         })
+
+        window.addEventListener("beforeunload", (ev) => 
+        {  
+            ev.preventDefault();
+            if(performance.navigation.type != performance.navigation.TYPE_RELOAD)
+                authenticationService.logout();
+        });
     }
     componentWillUnmount() {
         this.subscriptionProfileDropdown.unsubscribe();
         this.subscriptionImageSet.unsubscribe();
         this.subscriptionLogOut.unsubscribe();
+
+        window.removeEventListener("beforeunload", null);
     }
     toggle() {
         this.setState({

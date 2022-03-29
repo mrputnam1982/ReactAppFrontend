@@ -1,9 +1,11 @@
 import React, { Component, useState } from 'react';
 import { useLocation, Link, Navigate} from 'react-router-dom';
 import { Button, Container, Form, FormGroup, Input, Label } from 'reactstrap';
+
 import { EditorState, ContentState, convertFromRaw, convertToRaw} from 'draft-js'
 import RichTextEditor from '../Components/RichTextEditor'
 import AppNavbar from './AppNavbar';
+
 import {authHeader} from '../helpers/auth-header'
 import {authenticationService as auth} from '../services/authenticationService';
 import {getNameService as getNameSvc} from '../services/getNameService';
@@ -22,9 +24,13 @@ class PostEdit extends Component {
     emptyItem = {
         title: '',
         body: '',
-        author: ''
+        author: '',
+        username: ''
     };
-
+    initialFormState = {
+        title: "",
+        editorState: "",
+    }
     constructor(props) {
         super(props);
         this.state = {
@@ -37,6 +43,7 @@ class PostEdit extends Component {
         this.state.item.author = getNameSvc.currentNameValue;
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
+        this.isFormNotDirty = this.isFormNotDirty.bind(this);
         //this.onChangeRichTextEditor = this.onChangeRichTextEditor(this);
     }
     
@@ -48,6 +55,7 @@ class PostEdit extends Component {
         // console.log("Prestate", this.state
         console.log("Props", this.props);
         this.state.post_id = this.props.params.id;
+        this.state.item.username = auth.getUsernameFromJWT();
         const promise = auth.verifyLogin();
         if(promise === "DONE") {
            if (this.state.post_id !== 'new') {
@@ -61,7 +69,8 @@ class PostEdit extends Component {
                    }
                ).then(response => {
                    post = response.data;
-
+                   this.initialFormState.title = post.title;
+                   this.initialFormState.body = post.body;
                    this.setState({item: post,
                        editorState: EditorState.createWithContent(ContentState.createFromText(post.body))
                    });
@@ -88,7 +97,8 @@ class PostEdit extends Component {
                             const editorState =
                                     EditorState.createWithContent(convertFromRaw(
                                     JSON.parse(post.body)))
-
+                            this.initialFormState.title = post.title;
+                            this.initialFormState.body = post.body;
                             this.setState({item: post,
                                 editorState: editorState
                             });
@@ -100,7 +110,32 @@ class PostEdit extends Component {
         }
 
     }
+    getTextFromEditorState(editorState) {
+        if(!editorState) return "";
+        var jsonFormat = JSON.stringify(convertToRaw(editorState.getCurrentContent()));
+        jsonFormat = JSON.parse(jsonFormat);
+        var txt = "";
+        var blockArr = jsonFormat["blocks"];
+        blockArr.forEach(entry => {
+            txt += entry["text"];
+        })
+        return txt; 
+    }
+    isFormNotDirty() {
+        
+        var currentBody = this.getTextFromEditorState(this.state.editorState)
+        var initialBody = this.getTextFromEditorState(this.initialFormState.editorState);
+       
+        console.log("currentBody", currentBody);
+        console.log("initialBody", initialBody);
+        if((initialBody === "" && currentBody === "") || 
+            (this.initialFormState.title === "" && this.state.item.title === ""))
+            return true;
 
+        else if(currentBody === this.initialBody &&
+            this.state.item.title === this.initialFormState.title ) return true;
+        else return false;
+    }
     onChangeRichTextEditor = (newEditorState) =>{
       this.setState({editorState: newEditorState});
 
@@ -118,7 +153,7 @@ class PostEdit extends Component {
         event.preventDefault();
         const {item, editorState} = this.state;
         item.body = JSON.stringify(convertToRaw(this.state.editorState.getCurrentContent()));
-        console.log(JSON.stringify(item));
+        console.log("item to post", JSON.stringify(item));
         if(item.id) {
             axios.put(`/api/posts/${item.id}`, item, {
                 headers: {
@@ -151,6 +186,7 @@ class PostEdit extends Component {
         //console.log("editor text", editorState.getCurrentContent().getPlainText(''));
         //const {editorStateUpdated} = this.state.editorState;
         const heading = <h2>{this.state.item.id ? 'Edit Post' : 'New Post'}</h2>;
+        const isDisabled = this.isFormNotDirty();
         if(this.state.redirectToPosts) {
             this.state.redirectToPosts = false;
             return <Navigate to="/posts"/>
@@ -179,7 +215,7 @@ class PostEdit extends Component {
 
                         </FormGroup>
                         <FormGroup>
-                            <Button color="primary" type="submit">Save</Button>{' '}
+                            <Button color="primary" type="submit" disabled={isDisabled}>Save</Button>{' '}
                             <Button color="secondary" tag={Link} to="/posts">Cancel</Button>
                         </FormGroup>
                     </Form>

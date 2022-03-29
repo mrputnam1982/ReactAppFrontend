@@ -76,6 +76,7 @@ function requireAuth({children, redirectTo}) {
 
 function customRoute({children, path}) {
 
+    console.log("Custom Route", path);
     if(path === '/' && auth.loggedIn ) auth.logout();
     else return children;
 

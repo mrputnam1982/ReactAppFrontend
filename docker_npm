@@ -1,0 +1,13 @@
+# Pull node.js image
+FROM node:12-alpine as build
+WORKDIR /
+# Install npm packages and cache this layer
+COPY package*.json /
+
+RUN npm install
+# Build copy all source files and build React app
+COPY ./src /src
+
+COPY ./public /public
+# RUN echo $(md5sum /src/Pages/Home.js)
+RUN npm run build

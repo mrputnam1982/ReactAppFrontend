@@ -2,7 +2,9 @@ import React, { Component, useState } from 'react';
 import { Link, useLocation} from 'react-router-dom';
 import axios from 'axios';
 import { Button, Container, Card, CardHeader, CardTitle, CardBody, CardText, CardFooter, Label } from 'reactstrap';
+import {OverlayTrigger, Popover} from 'react-bootstrap';
 import AppNavbar from './AppNavbar';
+import Avatar from 'react-avatar';
 import CommentBox from './CommentBox';
 import CommentList from './CommentList';
 import {authHeader} from '../helpers/auth-header'
@@ -39,6 +41,8 @@ class PostView extends Component {
             title: '',
             date: '',
             body: '',
+            author: '',
+            posterUsername: '',
             commentValue: '',
             comments: [],
             icons: {},
@@ -47,7 +51,7 @@ class PostView extends Component {
             usersVoted: {},
             upVoteDisabled: {},
             downVoteDisabled: {},
-            username: "",
+            currentUsername: "",
             commentProfiles: {},
             isExpanded : false,
             isLoading: true
@@ -72,14 +76,14 @@ class PostView extends Component {
         this.post_id = this.props.params.id;
         console.log("post id", this.post_id);
         
-        this.state.username = auth.getUsernameFromJWT();
+        this.state.currentUsername = auth.getUsernameFromJWT();
         this.getPostAndComments();
         await this.getUserProfiles();
     
     }
 
     async getUserProfiles() {
-        if(this.currentRole !== "ROLE_GUEST") {
+        
             
             var commentProfiles = {};
            
@@ -87,7 +91,6 @@ class PostView extends Component {
                 headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json',
-                    'Authorization': authHeader()
                 }
             }).then(response => {
                 
@@ -98,10 +101,10 @@ class PostView extends Component {
                 })
 
                 console.log("commentProfiles", commentProfiles);
-                this.setState({commentProfiles: commentProfiles});
+                this.setState({commentProfiles: commentProfiles, isLoading: false});
             }).catch(err => console.log(err));
 
-        }   
+ 
     }
     async getPostAndComments() {
         if(getNameSvc.currentRoleValue) this.currentRole = getNameSvc.currentRoleValue.roleName;
@@ -110,6 +113,8 @@ class PostView extends Component {
             title: "",
             date: "",
             body: "",
+            author: "",
+            posterUsername: "",
             comments: {},
             icons: {},
             currentCount: 0,
@@ -118,6 +123,7 @@ class PostView extends Component {
             upVoteDisabled: {},
             downVoteDisabled: {}
         }
+
         await axios.get(`/api/posts/${this.post_id}`,
         {
             headers: {
@@ -128,6 +134,8 @@ class PostView extends Component {
         }).then(response => {
         state.title = response.data.title;
         state.date = response.data.modifiedAt;
+        state.author = response.data.author;
+        state.posterUsername = response.data.username;
         state.body = response.data.body;
         state.comments = response.data.comments;
         console.log(state.comments);
@@ -137,14 +145,15 @@ class PostView extends Component {
         //to comments in the parent Post Object, which needs to be discarded
         if(state.comments && state.comments[0] === null) state.comments.pop();
         if(state.comments && state.comments[0]) {
-        const usernameSet = new Set();
-        const imageSet = new Set();
+            const usernameSet = new Set();
+            const imageSet = new Set();
 
             state.comments.map(comment => {
                     //console.log("Comment:", comment);
                     state.currentCount++;
                     state.votes[comment.id] = comment.votes;
                     state.usersVoted[comment.id] = {};
+
                     if(comment.usersVoted !== null && Object.keys(comment.usersVoted).length >= 0)
                     {
 
@@ -163,7 +172,7 @@ class PostView extends Component {
                 state.downVoteDisabled[comment.id] = false;
                 if(comment.votes) {
                     comment.votes.forEach(vote => {
-                        if(vote.username === this.state.username) {
+                        if(vote.username === this.state.currentUsername) {
                             if(vote.voteType === "UP") {
                                 state.upVoteDisabled[comment.id] = true;
                             }
@@ -174,10 +183,14 @@ class PostView extends Component {
                     })
                 }
             });
-
+            //get poster icon in addition to comment poster icons
             var usernameArr = Array.from(usernameSet);
+            const found = usernameArr.find(name => name === state.posterUsername)
+            if(!found) usernameArr.push(state.posterUsername);
+
+            console.log("User icons to get", usernameArr);
             var index = 0;
-            console.log(usernameArr);
+            //console.log(usernameArr);
             await usernameArr.forEach(username => {
                 axios.get(`/api/getImage/${username}`, {
                     headers: {
@@ -203,12 +216,13 @@ class PostView extends Component {
                             title: state.title,
                             date: state.date,
                             body: state.body,
+                            author: state.author,
+                            posterUsername: state.posterUsername,
                             comments: state.comments,
                             icons: state.icons,
                             currentCount: state.currentCount,
                             upVoteDisabled: state.upVoteDisabled,
-                            downVoteDisabled: state.downVoteDisabled,
-                            isLoading: false
+                            downVoteDisabled: state.downVoteDisabled
                         });
                     }
 
@@ -226,23 +240,40 @@ class PostView extends Component {
                 var username = auth.currentUserValue;
                 state.icons[username] = null;
             }
+
+            await axios.get(`/api/getImage/${state.posterUsername}`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                    
+                }
+
+            }).then(response => {
+                if(response.data){
+                    console.log("image received", response.data);
+                    var key = response.data.username;
+                    state.icons[key] = response.data.strBase64File;
+                }
+                commentCounter = state.currentCount;
+                var votes = null;
+                var usersVoted = null;
+                this.setState({
+                    title: state.title,
+                    date: state.date,
+                    body: state.body,
+                    author: state.author,
+                    posterUsername: state.posterUsername,
+                    comments: state.comments,
+                    icons: state.icons,
+                    votes: votes,
+                    usersVoted : usersVoted,
+                    currentCount: state.currentCount
+                });
                 //update the commentCounter
-            commentCounter = state.currentCount;
-            var votes = null;
-            var usersVoted = null;
-            this.setState({
-                title: state.title,
-                date: state.date,
-                body: state.body,
-                comments: state.comments,
-                icons: state.icons,
-                votes: votes,
-                usersVoted : usersVoted,
-                currentCount: state.currentCount,
-                isLoading: false
+           
             });
         }
-
+    
     }
     handleCommentValue = (e) => {
         this.setState({commentValue: e.target.value});
@@ -253,12 +284,14 @@ class PostView extends Component {
             id: null,
             postId: this.post_id,
             commentId: id,
-            username:  this.state.username,
+            username:  this.state.currentUsername,
             voteType: "UP",
 
         }
         this.state.comments = this.updateCommentsWithVote(vote);
+        
         await this.setCommentWithVotes(id);
+        console.log("Comment with upvote", this.state.comments)
         this.state.upVoteDisabled[id] = true;
         this.state.downVoteDisabled[id] =  false;
         this.setState({});
@@ -273,13 +306,14 @@ class PostView extends Component {
                 id: null,
                 postId: this.post_id,
                 commentId: id,
-                username:  this.state.username,
+                username:  this.state.currentUsername,
                 voteType: "DOWN",
 
             }
 
             this.state.comments = this.updateCommentsWithVote(vote);
             await this.setCommentWithVotes(id);
+            console.log("Comment with downvote", this.state.comments)
             this.state.upVoteDisabled[id] = false;
             this.state.downVoteDisabled[id] =  true;
             this.setState({});
@@ -296,7 +330,7 @@ class PostView extends Component {
             if(comment.id === vote.commentId) {
                 if(comment.votes) {
                     comment.votes.forEach(tmp_vote => {
-                        if(tmp_vote.username === this.state.username) {
+                        if(tmp_vote.username === this.state.currentUsername) {
                             votes.push(vote);
                             vote_pushed = true;
                         }
@@ -318,72 +352,9 @@ class PostView extends Component {
     }
     updateUserVoted(id, val) {
 
-        this.state.usersVoted[id][this.state.username] = val;
+        this.state.usersVoted[id][this.state.currentUsername] = val;
     }
-    async setCommentWithVotes(id) {
-        var comment = null;
-        this.state.comments.forEach(com => {
-            if(com.id === id) comment = com;
-        })
-        var savedComment = await this.submitComment(comment);
-        console.log("savedComment", savedComment);
-        if(savedComment) {
-            var newComment = {
-                id: savedComment.id,
-                posterName: savedComment.posterName,
-                posterUsername: savedComment.posterUsername,
-                createdAt: savedComment.createdAt,
-                commentText: savedComment.commentText,
-                votes: savedComment.votes[savedComment.id],
-                usersVoted: savedComment.usersVoted
-            }
-
-            //modify existing comment to update votes and usersVoted
-            if(this.state.comments) {
-                var index  = this.state.comments.findIndex(comment => comment.id === id)
-                if(index >= 0) {
-                this.state.comments.splice(index, 1)
-                this.state.comments.push(savedComment);
-                }
-                else this.state.comments.push(savedComment);
-    //            this.state.comments.push(newComment);
-            }
-
-            if(Object.keys(this.state.votes) > 0)
-                this.state.votes[id] = savedComment.votes;
-            else {
-                this.state.votes = {};
-                this.state.votes[id] = savedComment.votes;
-            }
-            if(Object.keys(this.state.usersVoted) > 0)
-                this.state.usersVoted[id] = savedComment.usersVoted;
-            else {
-                this.state.usersVoted = {}
-                this.state.usersVoted[id] = savedComment.usersVoted;
-            }
-    //        var img = getImgSvc.currentImageValue
-    //
-    //        this.state.icons[savedComment.posterUsername] = img;
-            this.setState({
-            commentValue: ""
-            });
-            
-        }
-    }
-    async setComment() {
-        commentCounter++;
-
-        var comment = {
-            id: null,
-            postId: this.props.params.id,
-            posterName: getNameSvc.currentNameValue,
-            posterUsername: auth.getUsernameFromJWT(),
-            commentText: this.state.commentValue,
-            votes: null,
-            usersVoted: null
-        }
-        var savedComment = await this.submitComment(comment);
-
+    setCommentRefreshState(savedComment) {
         var newComment = {
             id: savedComment.id,
             posterName: savedComment.posterName,
@@ -420,6 +391,70 @@ class PostView extends Component {
         commentValue: ""
 
         });
+    }
+    setCommentWithVotesRefreshState(savedComment, id) {
+        var newComment = {
+            id: savedComment.id,
+            posterName: savedComment.posterName,
+            posterUsername: savedComment.posterUsername,
+            createdAt: savedComment.createdAt,
+            commentText: savedComment.commentText,
+            votes: savedComment.votes[savedComment.id],
+            usersVoted: savedComment.usersVoted
+        }
+
+        //modify existing comment to update votes and usersVoted
+        if(this.state.comments) {
+            var index  = this.state.comments.findIndex(comment => comment.id === id)
+            if(index >= 0) {
+            this.state.comments.splice(index, 1)
+            this.state.comments.push(savedComment);
+            }
+            else this.state.comments.push(savedComment);
+//            this.state.comments.push(newComment);
+        }
+
+        if(Object.keys(this.state.votes) > 0)
+            this.state.votes[id] = savedComment.votes;
+        else {
+            this.state.votes = {};
+            this.state.votes[id] = savedComment.votes;
+        }
+        if(Object.keys(this.state.usersVoted) > 0)
+            this.state.usersVoted[id] = savedComment.usersVoted;
+        else {
+            this.state.usersVoted = {}
+            this.state.usersVoted[id] = savedComment.usersVoted;
+        }
+//        var img = getImgSvc.currentImageValue
+//
+//        this.state.icons[savedComment.posterUsername] = img;
+        this.setState({
+        commentValue: ""
+        });
+    }
+    async setCommentWithVotes(id) {
+        var comment = null;
+        this.state.comments.forEach(com => {
+            if(com.id === id) comment = com;
+        })
+        await this.submitCommentWithVotes(comment, id);
+        
+
+    }
+    async setComment() {
+        commentCounter++;
+        var newComment = {};
+        var comment = {
+            id: null,
+            postId: this.props.params.id,
+            posterName: getNameSvc.currentNameValue,
+            posterUsername: auth.getUsernameFromJWT(),
+            commentText: this.state.commentValue,
+            votes: null,
+            usersVoted: null
+        }
+        await this.submitComment(comment);
 
     }
     setCommentLine() {
@@ -443,21 +478,7 @@ class PostView extends Component {
 
         const updatedComment = JSON.stringify(comment);
         console.log("Comment to put", updatedComment);
-//        await fetch(`/api/posts/comments/${this.props.location.state.params.id}`,{
-//                method: 'post',
-//                body: updatedComment,
-//                 headers: {
-//                    'Accept': 'application/json',
-//                    'Content-Type': 'application/json',
-//                    'Authorization': authHeader()
-//            },
-//        }).then(response => {
-//            savedComment  = response.data;
-//
-//
-//        }).catch(err => {
-//            console.log(err)
-//        });
+
         const promise = auth.verifyLogin();
         //console.log("Auth VerifyLogin Promise in SubmitComment", promise);
         if(promise) {
@@ -474,17 +495,48 @@ class PostView extends Component {
                 }).then(response => {
                     console.log("Response in submitComment", response);
                     savedComment = response.data;
+                    this.setCommentRefreshState(savedComment);
                 }).catch(err => {
                     console.log("PutComment error", err);
                 });
-                console.log("SubmitComment", savedComment);
-                return savedComment;
+
 
             })
         }
        
     }
+    async submitCommentWithVotes(comment, id) {
+        var savedComment = "";
 
+        const updatedComment = JSON.stringify(comment);
+        console.log("Comment to put", updatedComment);
+
+        const promise = auth.verifyLogin();
+        //console.log("Auth VerifyLogin Promise in SubmitComment", promise);
+        if(promise) {
+            promise.then(res => {
+                axios({
+                    method: 'post',
+                    url: `/api/posts/comments/${this.post_id}`,
+                    data: updatedComment,
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'Authorization': authHeader()
+                    }
+                }).then(response => {
+                    console.log("Response in submitComment", response);
+                    savedComment = response.data;
+                    this.setCommentWithVotesRefreshState(savedComment, id);
+                }).catch(err => {
+                    console.log("PutComment error", err);
+                });
+
+
+            })
+        }
+       
+    }
     async getIconImage(username) {
         await axios.get(`/api/getImage/${username}`, {
             headers: {
@@ -552,16 +604,57 @@ class PostView extends Component {
 //        item[name] = value;
 //        this.setState({item});
 //    }
+    renderTooltip = (props) => (
 
+        <Popover id="avatar-tooltip" {...props}>
+            <Popover.Header>
+
+                {props.popper.state ?
+                    <div>
+                        <b>Name:</b> {props.popper.state.options.name}
+                        <br/>
+                        {props.popper.state.options.title ?
+                            <i>{props.popper.state.options.title}</i> : <div/>
+                        }    
+                    </div>
+                    : <div/>
+                }
+
+            </Popover.Header>
+            <Popover.Body>
+                {props.popper.state ?
+                    <div>
+
+                        {/* {JSON.stringify(props.popper.state.options.userProfile.profileHeading)} */}
+                        <b>A little about me:</b> {props.popper.state.options.body ?
+                            <div>
+                                {renderHTML(
+                                    stateToHTML(
+                                        convertFromRaw(
+                                            JSON.parse(props.popper.state.options.body))))}
+                            </div>
+                            : <div>N/a</div> }
+                    </div>
+                : <div>
+                    Loading...
+                </div>
+                }
+            </Popover.Body>
+        </Popover>
+
+    );
 
     render() {
         const {title,
             date,
             body,
+            author,
+            posterUsername,
             commentValue,
             comments,
             upVoteDisabled,
             downVoteDisabled,
+            currentUsername,
             icons,
             commentProfiles,
             isExpanded,
@@ -572,7 +665,7 @@ class PostView extends Component {
         console.log("render state", this.state);
         //console.log("render props", this.incrementUpVote, this.incrementDownVote);
         //console.log("Icon dictionary keys", Object.keys(icons));
-        if(isLoading) { return <div/>}
+        if(isLoading || posterUsername === "") { return <div/>}
 
         var bodyHTML = ""
         if(body) bodyHTML = stateToHTML(convertFromRaw(JSON.parse(body)));
@@ -581,13 +674,58 @@ class PostView extends Component {
         var currentRole = this.currentRole;
         var d = new Date( date * 1000);
         var month = d.toLocaleDateString("en-US", options);
-        var dateStr = month + ", " + moment(d).format("Do, YYYY, h:mm a");
+        var dateStr = month + " " + moment(d).format("Do, YYYY, h:mm a");
+        var i
+
         return <div>
             <Container>
                 <Card>
                 <CardHeader>
                     <CardTitle>
-                        <h2><em>{title}</em></h2>
+                        <div className="d-flex justify-content-between">
+                            <h2><em>{title}</em></h2>
+                            <div>
+                                {icons[posterUsername] ?
+                                <div>
+                                    <OverlayTrigger
+                                        placement="bottom"
+                                        delay={{ show: 250, hide: 400 }}
+                                        overlay={this.renderTooltip}
+                                        popperConfig=
+                                            {{name  : commentProfiles[posterUsername].name,
+                                            title : commentProfiles[posterUsername].profileHeading,
+                                            body: commentProfiles[posterUsername].profileInfo}} >
+                                    <div style={{width: "75px"}}>   
+                                    <Avatar
+                                        style={{pointerEvents: 'none'}}
+                                        size="50"
+                                        round={true}
+                                        name={author}
+                                        src={icons[posterUsername]}/>
+                                    </div>
+                                    </OverlayTrigger>
+                                </div> :
+                                <div>
+                                    <OverlayTrigger
+                                        placement="bottom"
+                                        delay={{ show: 250, hide: 400 }}
+                                        overlay={this.renderTooltip}
+                                        popperConfig=
+                                            {{name  : commentProfiles[posterUsername].name,
+                                            title : commentProfiles[posterUsername].profileHeading,
+                                            body: commentProfiles[posterUsername].profileInfo}} >
+                                    <div style={{width: "75px"}}>   
+                                    <Avatar
+                                        style={{pointerEvents: 'none'}}
+                                        size="50"
+                                        round={true}
+                                        name={author}
+                                        />
+                                    </div>
+                                    </OverlayTrigger>
+                                </div> }
+                            </div>
+                        </div>
                         {dateStr}
                     </CardTitle>
 
@@ -621,7 +759,7 @@ class PostView extends Component {
                             icons={icons}
                             removeComment = {this.removeComment}
                             count = {comments.length}
-                            currentUsername = {this.state.username}
+                            currentUsername = {currentUsername}
                             currentRole = {this.currentRole}
                             />
 

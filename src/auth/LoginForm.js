@@ -49,7 +49,7 @@ export default class LoginForm extends Component {
             getNameSvc.setName(promise.name);
             getNameSvc.setRole(promise.roles[0]);
             if(promise.image) getImgSvc.setImage(promise.image.strBase64File)
-
+            else getImgSvc.setImage("");
             this.setState({loginFail: false});;
             history.push('/posts');
         }

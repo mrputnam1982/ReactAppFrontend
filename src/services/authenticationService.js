@@ -47,7 +47,7 @@ async function verifyLogin() {
         if (decodedJwt.exp * 1000 < Date.now()) {
           localStorage.removeItem('currentUser');
           const username = decodedJwt.sub;
-          const cookieValue = cookies.get("refresh_token").key;
+          const cookieValue = cookies.get("refresh_token");
 
           let params = {
             username,
@@ -81,7 +81,7 @@ async function resendVerificationEmail(username, password) {
     }).catch(err => console.log(err))
 }
 async function login(username, password) {
-    const cookies = new Cookies();
+    
     var refresh_token_data = "";
     var name = "";
     var roles = "";
@@ -98,6 +98,9 @@ async function login(username, password) {
 //        redirect: 'follow',
 //        body: JSON.stringify({ username, password })
 //    };
+    if(authenticationService.loggedIn) {
+      authenticationService.logout();
+    }
     await axios.put('/auth/login', {username, password})
     .then(response => {
         console.log(response.data);
@@ -108,40 +111,43 @@ async function login(username, password) {
         authenticationService.loggedIn = true;
         currentUserSubject.next(JSON.parse(localStorage.getItem('currentUser')));
         console.log("loggedIn", authenticationService.loggedIn)
+        setRefreshToken(username);
     }).catch(err => { console.log(err.response.data)
         if(err.response.data === "Client not enabled") authenticationService.verificationError = true;
         authenticationService.loggedIn = false;
     });
 
-    if(authenticationService.loggedIn === true) {
-        //console.log(username)
-        await axios.post("/auth/refresh_token/generate", username,
-        {
-            headers: { "Content-Type": "text/plain"},
-
-        }).then(response => {
-           console.log(response.data);
-           refresh_token_data = response.data;
-
-        })
-    }
-    if(refresh_token_data) {
-        console.log("SetCookie refresh_token", refresh_token_data);
-
-        cookies.set(refresh_token_data.name, {
-            key: refresh_token_data.value},
-            {path: '/',
-             maxAge: refresh_token_data.maxAge,
-             secure: refresh_token_data.secure});
-        console.log(cookies.getAll());
-    }
+    
 
     console.log("AuthenticationService Login", image);
     return {name, roles, image};
 
 }
 
+async function setRefreshToken(username) {
+  const cookies = new Cookies();
+  var refresh_token_data = "";
+  await axios.post("/auth/refresh_token/generate", username,
+  {
+      headers: { "Content-Type": "text/plain"},
+
+  }).then(response => {
+      console.log(response.data);
+      refresh_token_data = response.data;
+      console.log("SetCookie refresh_token", refresh_token_data);
+
+      cookies.set(refresh_token_data.name, 
+        refresh_token_data.value,
+        {path: '/',
+         maxAge: refresh_token_data.maxAge,
+         secure: refresh_token_data.secure});
+      console.log(cookies.getAll());
+  }).catch(err => console.log(err));
+
+
+}
 function logout() {
+    
     const cookies = new Cookies();
     // remove user from local storage to log user out
     localStorage.removeItem('currentUser');
@@ -154,4 +160,5 @@ function logout() {
     localStorage.removeItem("role");
     localStorage.removeItem("name");
     localStorage.removeItem("dataUrl");
+    console.log("Logged out", getNameSvc.currentNameValue, getImgSvc.currentImageValue);
 }

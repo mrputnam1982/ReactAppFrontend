@@ -5,6 +5,7 @@ import { Link, Navigate } from 'react-router-dom';
 import { Button, Container, Row, Col } from 'reactstrap';
 import {authenticationService as auth} from '../services/authenticationService'
 import {getNameService as getNameSvc} from '../services/getNameService'
+import {getIsLoading} from '../services/loadingService'
 import axios from 'axios';
 import PostList from "../Components/PostList"
 import Cookies from 'universal-cookie';
@@ -16,7 +17,7 @@ class Posts extends Component {
 
     constructor(props) {
         super(props);
-        this.state = {role: "ROLE_GUEST", posts: [], currentPage: [], redirectToPostView: false};
+        this.state = {role: "ROLE_GUEST", posts: [], currentPagePosts: [], redirectToPostView: false, isLoading: true};
         this.subscriptionRole = null;
         this.goToNextPage = this.goToNextPage.bind(this);
         this.goToPrevPage = this.goToPrevPage.bind(this);
@@ -32,10 +33,19 @@ class Posts extends Component {
             }
         })
 
+
+
+        // this.subscriptionIsLoading = getIsLoading.isLoading.subscribe(loading => {
+        //     console.log("Loading status changed", loading);
+        //     if(loading) this.setState({isLoading: true});
+        //     else this.setState({isLoading: false});
+        // })
+
     }
 
     componentDidMount() {
         const promise = auth.verifyLogin();
+        this.postListChild = React.createRef();
         console.log("Posts componentDidMount", promise);
         if(promise) {
             promise.then(result => {
@@ -46,6 +56,7 @@ class Posts extends Component {
                 }
             })
         }
+        let postListSorted = [];
         axios.get('api/posts').then(
             res => {
                 console.log(res.data);
@@ -61,15 +72,15 @@ class Posts extends Component {
             });
             Pagination.setItemCount(this.state.posts.length);
             Pagination.setTotalPages();
-
-            console.log(Pagination.totalPages);
-
-            this.setState({currentPage: this.getCurrentPage()});
+            Pagination.currentPage = 1;
+            console.log(Pagination.totalPages); 
+            this.setState({currentPage: Pagination.currentPage, currentPagePosts: this.getCurrentPagePosts(), isLoading: false});
         });
     }
 
     updatePagination() {
         let posts = [];
+        let postListSorted = [];
         axios.get('api/posts', {
             headers: {
                 'Authorization': authHeader()
@@ -80,30 +91,46 @@ class Posts extends Component {
 
                 //response.json();
                 posts = res.data;
-
+                
         }).then(() => {
             Pagination.setItemCount(posts.length);
+            
+            if(Pagination.itemCount <= (Pagination.totalPages - 1) * 3) {
+                Pagination.goToPrevPage();
+            }
+
             Pagination.setTotalPages();
-            Pagination.currentPage = 1;
-            this.setState({posts: posts, currentPage: this.getCurrentPage()})
+            this.state.posts = posts;
+            console.log("updated pagination", posts)
+            this.state.posts = posts.sort(function(a,b) {
+                return a.modifiedAt < b.modifiedAt ? 1 : -1;
+            });
+           
+            this.setState({currentPage: Pagination.currentPage, currentPagePosts: this.getCurrentPagePosts(), isLoading:false})
+
         });
     }
     componentWillUnmount() {
         this.subscriptionRole.unsubscribe();
+        // this.subscriptionIsLoading.unsubscribe();
     }
 
     goToNextPage() {
         Pagination.goToNextPage();
-        this.setState({currentPage: this.getCurrentPage()});
+        console.log(Pagination.currentPage);
+        this.setState({currentPage: Pagination.currentPage, currentPagePosts: this.getCurrentPagePosts()});
     }
 
     goToPrevPage() {
         Pagination.goToPrevPage();
-        this.setState({currentPage: this.getCurrentPage()});
+        this.setState({currentPage: Pagination.currentPage, currentPagePosts: this.getCurrentPagePosts()});
     }
 
-    getCurrentPage() {
+    getCurrentPagePosts() {
             console.log("CurrentPage", Pagination.currentPage);
+            console.log("CurrentStartIndex", Pagination.getCurrentStartIndex());
+            console.log("CurrentEndIndex", Pagination.getCurrentEndIndex());
+            console.log("Pagination Object", Pagination);
         return this.state.posts.slice(Pagination.getCurrentStartIndex(),
                 Pagination.getCurrentEndIndex() + 1);
     }
@@ -123,13 +150,18 @@ class Posts extends Component {
     render() {
         const currRole = this.state.role.roleName;
         const currentPage = this.state.currentPage;
+        const currentPosts = this.state.currentPagePosts;
         const prevButtonDisabled = this.isFirstPage();
         const nextButtonDisabled = this.isLastPage();
+
 //        console.log(currRole);
         console.log("CurrentPage", currentPage);
         var id = "new"
-
-
+        
+        if(this.state.isLoading){
+            console.log("loading");
+            return <div/>;
+        }
         return (
             <div>
                 <Container fluid>
@@ -147,9 +179,14 @@ class Posts extends Component {
                         }
                         <h3>Posts</h3>
                         <div className="col-md-8">
-                            <PostList updatePosts={this.updatePagination} posts={currentPage} role={currRole}/>
+                            <PostList ref={this.postListChild} 
+                                updatePosts={this.updatePagination} 
+                                posts={currentPosts} 
+                                role={currRole}/>
                         </div>
                     </Row>
+                    
+
                     {Pagination.totalPages !== 1 ?
                         <Row>
                             <Col>
@@ -163,7 +200,9 @@ class Posts extends Component {
                                 </Button>
                             </Col>
                         </Row>
+                    
                     : <div/>}
+
                 </Container>
             </div>
         );

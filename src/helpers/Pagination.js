@@ -24,7 +24,18 @@ function getCurrentStartIndex() {
 }
 
 function getCurrentEndIndex() {
-    return (Pagination.itemsPerPage * Pagination.currentPage) - 1
+    var itemsLastPage;
+    if(Pagination.totalPages === 1) itemsLastPage = Pagination.itemCount;
+    else{
+        let tmp = (Pagination.itemCount % Pagination.itemsPerPage);
+        if(tmp === 0) itemsLastPage = 3;
+        else itemsLastPage = tmp;
+        
+    }
+    // console.log("itemsCurrPage", itemsCurrPage); 
+    if(Pagination.currentPage === Pagination.totalPages)
+        return (Pagination.itemsPerPage * (Pagination.currentPage - 1)) + itemsLastPage - 1;
+    else return (Pagination.itemsPerPage * Pagination.currentPage) - 1;
 }
 
 function goToNextPage() {

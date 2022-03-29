@@ -48,6 +48,7 @@ class ProfileEdit extends Component{
         this.imageSaved = this.imageSaved.bind(this);
         this.postImagetoImgBB = this.postImageToImgBB.bind(this);
         this.getBase64Image = this.getBase64Image.bind(this);
+        this.displayFilePicker = this.displayFilePicker.bind(this);
     }
 
     async handleSubmit(event) {
@@ -132,7 +133,7 @@ class ProfileEdit extends Component{
 
     async getClient() {
         let client = "";
-
+        this.username = auth.getUsernameFromJWT();
         await axios.get(`/api/clients/getByUsername/${this.username}`, {
             headers: {
                     'Content-Type': 'application/json',
@@ -183,6 +184,8 @@ class ProfileEdit extends Component{
     }
 
     componentDidMount() {
+        this.inputFilePicker = React.createRef();
+    
         if(localStorage.getItem('currentUser')) {
             this.getClient();
         }
@@ -254,8 +257,23 @@ class ProfileEdit extends Component{
         }
     }
 
-    displayAvatarEditor() {
-        this.setState({showModal: true});
+    displayFilePicker() {
+        // this.inputFilePicker = React.createRef();
+        console.log(this.inputFilePicker);
+        if(this.inputFilePicker && this.inputFilePicker.current && !this.state.image) {
+            this.inputFilePicker.current.click();
+        }
+        else this.displayAvatarEditor(null);
+    }
+    displayAvatarEditor(e) {
+        console.log(e);
+        if(!e) this.setState({showModal: true});
+        else if(e.target.files[0]) 
+        {
+            this.state.image = (e.target.files[0])
+
+            this.setState({showModal: true});
+        }
     }
 
     closeAvatarEditor() {
@@ -343,6 +361,12 @@ class ProfileEdit extends Component{
                 {contentLoaded ?
                     (
                     <div>
+                        
+
+                        <input type="file" 
+                            ref={this.inputFilePicker} 
+                            style={{display: "none"}}
+                            onChange={this.displayAvatarEditor}/>
                         <CustomAvatarEditor
                             image={image}
                             showModal={showModal}
@@ -350,6 +374,8 @@ class ProfileEdit extends Component{
                             setImage={this.setImage}
                             imageSaved={this.imageSaved}
                         />
+  
+                        
                         <Container>
                             <h1>Edit Profile</h1>
                             <Form onSubmit={this.handleSubmit}>
@@ -382,7 +408,7 @@ class ProfileEdit extends Component{
                                                 <Avatar round ={true}
                                                     borderRadius="50"
                                                     size="100"
-                                                    name={image}
+                                                    
                                                     src={image}/>
                                                 :
                                                 <Avatar size="100"
@@ -393,7 +419,7 @@ class ProfileEdit extends Component{
                                         <Row>
                                             <Button style={{marginTop: "10px", maxWidth: "200px"}}
                                                 color="primary"
-                                                onClick={this.displayAvatarEditor}>
+                                                onClick={this.displayFilePicker}>
                                                 Choose Icon
                                             </Button>
 

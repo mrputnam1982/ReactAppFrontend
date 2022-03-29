@@ -22,14 +22,20 @@ class CustomAvatarEditor extends Component {
         showModal: false,
         showImagePickerModal: true,
         allowZoomOut: false,
-        scale: 1
+        scale: 1,
+        newImage: ""
     }
+    this.inputFilePicker = null;
     this.showImagePicker = this.showImagePicker.bind(this);
     this.closeImagePicker = this.closeImagePicker.bind(this);
     this.saveImage = this.saveImage.bind(this);
+    this.chooseNewImage = this.chooseNewImage.bind(this);
+    this.onFilePickerSelection = this.onFilePickerSelection.bind(this); 
   }
 
-
+  componentDidMount() {
+    this.inputFilePicker = React.createRef();
+  }
   setEditorRef = (editor) => (this.editor = editor)
   showImagePicker() {
       this.setState({showImagePickerModal: true});
@@ -54,19 +60,34 @@ class CustomAvatarEditor extends Component {
     this.props.imageSaved(img);
     this.props.modalClose();
   }
+
+  chooseNewImage() {
+    this.inputFilePicker.current.click();
+  }
+
+  onFilePickerSelection(e) {
+    if(e.target.files[0]) this.setState({newImage: e.target.files[0]})
+  }
   render() {
 
-    const imageUrl = this.props.image;
+    
+    var imageUrl = this.props.image;
     const showModal= this.props.showModal;
     const modalClose = this.props.modalClose;
     const setImage = this.props.setImage;
     var borderRadius
 
+    if(this.state.newImage) imageUrl = this.state.newImage;
+    
     if(imageUrl) borderRadius = 125;
     else borderRadius = 0;
     //console.log("Avatar Editor render", imageUrl, showModal, modalClose);
     return (
        <div>
+           <input type="file" 
+                ref={this.inputFilePicker} 
+                style={{display: "none"}}
+                onChange={this.onFilePickerSelection}/>
        <Container>
          <Row className="justify-content-md-center">
             <Col md="auto">
@@ -113,35 +134,7 @@ class CustomAvatarEditor extends Component {
                                 </div>
                             )
                         : <div/> }
-                        <Row className="justify-content-md-center">
-                            <Col md="auto">
-
-                                 <ImagePicker
-                                 extensions={['jpg', 'jpeg', 'png']}
-                                 dims={{minWidth: 100, maxWidth: 500, minHeight: 100, maxHeight: 500}}
-
-                                 onChange={base64 => {
-                                     console.log("Image chosen:", base64);
-                                     this.state.image =  base64
-                                     this.closeImagePicker(true);
-                                     }
-                                 }
-                                 onError={errMsg => {
-                                     console.log("Image error:", errMsg);
-                                     this.state.image = ""
-                                     this.closeImagePicker(false);
-                                     }
-                                 }
-                                 >
-
-                                 <Button
-                                    color="secondary">
-                                   Choose Image
-                                 </Button>
-                                 </ImagePicker>
-
-                            </Col>
-                        </Row>
+                        
                         <Row className="justify-content-md-center"
                             style={{marginTop : "10px", marginBottom: "5px"}}>
                             <Col md="auto">
@@ -151,6 +144,12 @@ class CustomAvatarEditor extends Component {
                                 </Button>
                                 : <div/>
                             }
+                            </Col>
+                            <Col md="auto">
+                                <Button class="secondary" onClick={this.chooseNewImage}>
+                                    Update Image
+                                </Button>
+
                             </Col>
                          </Row>
                          <Row >

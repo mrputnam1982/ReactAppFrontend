@@ -41,18 +41,18 @@ class PostList extends Component {
         if (isLoading) {
             return <p>Loading...</p>;
         }
+        
 
-
-
+        
         const postList = posts.map(post => {
-                    var body = stateToHTML(convertFromRaw(
-                            JSON.parse(post.body)));
+                    // var body = stateToHTML(convertFromRaw(
+                    //         JSON.parse(post.body)));
                     var options = { month: 'long'};
-
+                
                     var d = new Date( post.modifiedAt * 1000);
                     var month = d.toLocaleDateString("en-US", options);
 
-                    var date = month + ", " + moment(d).format("Do, YYYY, h:mm a");
+                    var date = month + " " + moment(d).format("Do, YYYY, h:mm a");
                     return(
                     <div>
                     <article class="blog-post">
@@ -76,7 +76,6 @@ class PostList extends Component {
                         </h2>
                         <p class="blog-post-meta">{post.author}</p>
                         <p class="blog-post-meta">{date}</p>
-                        <p>{renderHTML(body)}</p>
                     </article>
                     </div>
                     );
